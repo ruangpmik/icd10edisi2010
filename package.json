@@ -7,7 +7,7 @@
     "build:data": "node scripts/build-data.mjs",
     "dev": "next dev -p 3001",
     "dev:lan": "next dev -H 0.0.0.0 -p 3001",
-    "build": "node scripts/build-data.mjs && next build",
+    "build": "node scripts/build-data.mjs && next build && node scripts/obfuscate.mjs",
     "start": "next start -p 3001",
     "lint": "next lint"
   },
@@ -25,6 +25,7 @@
     "@types/node": "^20.16.13",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
+    "javascript-obfuscator": "^4.2.2",
     "typescript": "^5.6.3"
   },
   "engines": {
