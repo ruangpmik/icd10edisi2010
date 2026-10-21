@@ -7,6 +7,7 @@ import {
   Ambulance, ArrowLeft, ArrowRight, ArrowUp, Asterisk, BadgeCheck, BookMarked, BookOpen, Check, ChevronDown, ChevronRight,
   Circle, Copy, Dna, ExternalLink, FileText, Info, Languages, ListCollapse, ListOrdered, ListTree, Loader2, Moon, Pencil, Pill, Plus,
   Printer, Search, SearchX, ShieldAlert, Stethoscope, StickyNote, Sun, Sword, Table2, Trash2, TriangleAlert, X, ZoomIn, ZoomOut,
+  MessageSquare,
 } from "lucide-react";
 import {
   ALL_SCOPE, breadcrumb, codeMark, codeStatus, effectiveMods, getNode, linkify, linkTarget, matchAncestors, preferred, rubText,
@@ -24,6 +25,9 @@ import { translateEnId } from "@/lib/translate";
 const LS_CUSTOM = "icd10-id-custom-v1";
 const LS_NOTES = "icd10-notes-v1";
 const LS_LANG = "icd10-lang";
+
+/** Tujuan masukan. Situs statis, jadi pesan diantar lewat aplikasi email pengguna. */
+const FB_MAIL = "ruangpmik@gmail.com";
 
 /** Sumber data tab "Indeks A–Z": 4 daftar + 1 tampilan tabel matriks. */
 type IdxSrc = "alpha" | "ext" | "neo" | "drugs" | "tables";
@@ -214,6 +218,11 @@ export default function Page() {
   const [copied, setCopied] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [showGuide, setShowGuide] = useState(false);
+  const [showFb, setShowFb] = useState(false);
+  const [fbName, setFbName] = useState("");
+  const [fbEmail, setFbEmail] = useState("");
+  const [fbMsg, setFbMsg] = useState("");
+  const [fbErr, setFbErr] = useState<string | null>(null);
   const [validOnly, setValidOnly] = useState(false);
   const [scope, setScope] = useState<Scope>({ ...ALL_SCOPE });
   const [mode, setMode] = useState<"tree" | "index">("tree");
@@ -242,6 +251,7 @@ export default function Page() {
   const matrixDlg = useDialogFocus(!!matrix);
   const morphDlg = useDialogFocus(morphOpen);
   const guideDlg = useDialogFocus(showGuide);
+  const fbDlg = useDialogFocus(showFb);
   const [mt, setMt] = useState<Record<string, { title: string; rub: Record<string, string[]> }>>({});
   const [mtBusy, setMtBusy] = useState(false);
   const [mtErr, setMtErr] = useState<string | null>(null);
@@ -422,6 +432,39 @@ export default function Page() {
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
   }, [showGuide]);
+
+  useEffect(() => {
+    if (!showFb) return;
+    const fn = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowFb(false);
+    };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [showFb]);
+
+  // Tidak ada backend: pesan disusun jadi mailto ke alamat pemilik aplikasi.
+  const sendFeedback = () => {
+    const mail = fbEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+      setFbErr(t.fbErrEmail);
+      return;
+    }
+    if (fbMsg.trim().length < 10) {
+      setFbErr(t.fbErrMsg);
+      return;
+    }
+    const name = fbName.trim() || "-";
+    const subject = `Masukan ICD-10 Browser${name !== "-" ? ` - ${name}` : ""}`;
+    const body = [`Nama: ${name}`, `Email: ${mail}`, "", fbMsg.trim()].join("\r\n");
+    setFbErr(null);
+    // Jangkar lebih andal daripada location.href untuk skema mailto.
+    const a = document.createElement("a");
+    a.href = `mailto:${FB_MAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    a.rel = "noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
 
   const pickLang = (l: Lang) => {
     setLang(l);
@@ -1230,6 +1273,13 @@ export default function Page() {
             <div className="flex items-center gap-0.5 rounded-xl bg-white/10 p-1">
               <HBtn title={t.print} onClick={() => window.print()}><Printer size={15} /><span className="max-sm:hidden">{t.print}</span></HBtn>
               <HBtn title={t.guide} onClick={() => setShowGuide(true)}><BookOpen size={15} /><span className="max-sm:hidden">{t.guide}</span></HBtn>
+              <button
+                onClick={() => { setFbErr(null); setShowFb(true); }}
+                title={t.feedback}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
+              >
+                <MessageSquare size={15} /><span className="max-sm:hidden">{t.feedback}</span>
+              </button>
             </div>
           </nav>
         </div>
@@ -2090,7 +2140,14 @@ export default function Page() {
         {t.footerMid}{" "}
         <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/2010/en" target="_blank" rel="noreferrer">WHO Browser 2010 <ExternalLink size={11} /></a> •{" "}
         <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/Content/statichtml/ICD10Volume2_en_2010.pdf" target="_blank" rel="noreferrer">Manual Vol.2 (PDF) <ExternalLink size={11} /></a> •{" "}
-        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/Help/en" target="_blank" rel="noreferrer">User Guide <ExternalLink size={11} /></a>
+        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/Help/en" target="_blank" rel="noreferrer">User Guide <ExternalLink size={11} /></a>{" "}
+        {"\u00b7"}{" "}
+        <button
+          className="inline-flex items-center gap-0.5 font-semibold text-teal-700 hover:underline dark:text-teal-300"
+          onClick={() => { setFbErr(null); setShowFb(true); }}
+        >
+          {t.feedback}
+        </button>
       </footer>
 
       {matrixTbl && (
@@ -2407,6 +2464,95 @@ export default function Page() {
                 className="inline-flex items-center gap-1 rounded-lg bg-pmik-orange px-3 py-1.5 text-[12px] font-semibold text-navy-950 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
               >
                 <X size={13} /> {t.close}
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {showFb && (
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 p-3 backdrop-blur-sm sm:p-4" onClick={() => setShowFb(false)}>
+          <div ref={fbDlg} role="dialog" aria-modal="true" aria-label={t.fbTitle} className="flex max-h-[88vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-navy-950/10 dark:bg-navy-900 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
+            <header className="flex shrink-0 items-start gap-3 border-b border-slate-100 bg-gradient-to-r from-teal-50 to-white px-5 py-4 dark:border-white/10 dark:from-teal-950/40 dark:to-navy-900">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white shadow-sm dark:bg-teal-700">
+                <MessageSquare size={18} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-[16.5px] font-bold leading-snug text-navy-900 dark:text-white">{t.fbTitle}</h2>
+                <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">{t.fbSub}</p>
+              </div>
+              <button
+                onClick={() => setShowFb(false)}
+                title={t.close}
+                aria-label={t.close}
+                className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500 dark:hover:bg-white/10 dark:hover:text-slate-200"
+              >
+                <X size={17} />
+              </button>
+            </header>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              <label htmlFor="fb-name" className="block text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
+                {t.fbName} <span className="font-normal text-slate-400">({t.fbNameHint})</span>
+              </label>
+              <input
+                id="fb-name"
+                value={fbName}
+                onChange={(e) => setFbName(e.target.value)}
+                autoComplete="name"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13.5px] text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-white/15 dark:bg-navy-950 dark:text-slate-100"
+              />
+
+              <label htmlFor="fb-email" className="mt-3 block text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
+                {t.fbEmail} <span className="font-normal text-slate-400">({t.fbEmailHint})</span>
+              </label>
+              <input
+                id="fb-email"
+                type="email"
+                value={fbEmail}
+                onChange={(e) => { setFbEmail(e.target.value); setFbErr(null); }}
+                autoComplete="email"
+                required
+                aria-invalid={fbErr === t.fbErrEmail}
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13.5px] text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-white/15 dark:bg-navy-950 dark:text-slate-100"
+              />
+
+              <label htmlFor="fb-msg" className="mt-3 block text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
+                {t.fbMsg} <span className="font-normal text-slate-400">({t.fbMsgHint})</span>
+              </label>
+              <textarea
+                id="fb-msg"
+                value={fbMsg}
+                onChange={(e) => { setFbMsg(e.target.value); setFbErr(null); }}
+                rows={5}
+                placeholder={t.fbMsgPh}
+                className="mt-1 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13.5px] leading-relaxed text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-white/15 dark:bg-navy-950 dark:text-slate-100 dark:placeholder:text-slate-500"
+              />
+
+              {fbErr && (
+                <p role="alert" className="mt-2 flex items-center gap-1.5 text-[12.5px] font-medium text-red-600 dark:text-red-400">
+                  <TriangleAlert size={14} /> {fbErr}
+                </p>
+              )}
+
+              <p className="mt-3 flex gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11.5px] leading-relaxed text-slate-600 dark:border-white/10 dark:bg-navy-950/50 dark:text-slate-400">
+                <Info size={13} className="mt-0.5 shrink-0" />
+                <span className="min-w-0 flex-1">{t.fbNote}</span>
+              </p>
+            </div>
+
+            <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-3 dark:border-white/10 dark:bg-navy-950/40">
+              <button
+                className="rounded-lg px-3 py-2 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-400 dark:text-slate-300 dark:hover:bg-white/10"
+                onClick={() => setShowFb(false)}
+              >
+                {t.fbCancel}
+              </button>
+              <button
+                className="inline-flex items-center gap-1.5 rounded-lg bg-pmik-orange px-4 py-2 text-[13px] font-semibold text-navy-950 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
+                onClick={sendFeedback}
+              >
+                <Check size={14} /> {t.fbSend}
               </button>
             </footer>
           </div>
