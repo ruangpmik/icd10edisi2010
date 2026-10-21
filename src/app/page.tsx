@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyEvent } from "react";
@@ -26,10 +26,13 @@ const LS_CUSTOM = "icd10-id-custom-v1";
 const LS_NOTES = "icd10-notes-v1";
 const LS_LANG = "icd10-lang";
 
-/** Tujuan masukan. Situs statis, jadi pesan diantar lewat aplikasi email pengguna. */
-const FB_MAIL = "ruangpmik@gmail.com";
+/** Tujuan masukan: Google Form, dibuka sebagai popup di dalam aplikasi. */
+const FB_FORM =
+  "https://docs.google.com/forms/d/e/1FAIpQLScJXuA6wKF3EG1IenqddSsGvdDxXI-_sjCRCKiq50FeKjLqRw/viewform?embedded=true";
+const FB_FORM_NEW =
+  "https://docs.google.com/forms/d/e/1FAIpQLScJXuA6wKF3EG1IenqddSsGvdDxXI-_sjCRCKiq50FeKjLqRw/viewform?usp=header";
 
-/** Sumber data tab "Indeks A–Z": 4 daftar + 1 tampilan tabel matriks. */
+/** Sumber data tab "Indeks Aâ€“Z": 4 daftar + 1 tampilan tabel matriks. */
 type IdxSrc = "alpha" | "ext" | "neo" | "drugs" | "tables";
 const TBL_SRC = ["neo", "drugs"] as const;
 
@@ -46,7 +49,7 @@ const TBL_DOT = ["bg-blue-500", "bg-indigo-500", "bg-violet-500", "bg-emerald-50
 const FOCUSABLE =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
-/** Rujukan "lihat: …" yang tak punya tujuan sama sekali (artefak parse). */
+/** Rujukan "lihat: â€¦" yang tak punya tujuan sama sekali (artefak parse). */
 function seeUsable(t: string): boolean {
   return !/^(also|note at|Leuk\(o)$/i.test(t.trim());
 }
@@ -219,10 +222,6 @@ export default function Page() {
   const [zoom, setZoom] = useState(1);
   const [showGuide, setShowGuide] = useState(false);
   const [showFb, setShowFb] = useState(false);
-  const [fbName, setFbName] = useState("");
-  const [fbEmail, setFbEmail] = useState("");
-  const [fbMsg, setFbMsg] = useState("");
-  const [fbErr, setFbErr] = useState<string | null>(null);
   const [validOnly, setValidOnly] = useState(false);
   const [scope, setScope] = useState<Scope>({ ...ALL_SCOPE });
   const [mode, setMode] = useState<"tree" | "index">("tree");
@@ -333,7 +332,7 @@ export default function Page() {
     };
   }, []);
 
-  // Indeks Alfabet Vol.3 dimuat malas: hanya saat tab "Indeks A–Z" dibuka.
+  // Indeks Alfabet Vol.3 dimuat malas: hanya saat tab "Indeks Aâ€“Z" dibuka.
   useEffect(() => {
     if (mode !== "index" || idx || idxBusy) return;
     setIdxBusy(true);
@@ -363,7 +362,7 @@ export default function Page() {
       });
   }, [mode, idxSrc, tbls, tblBusy, lang]);
 
-  // Seksi II Vol.3 — indeks Penyebab Luar (cedera & keracunan).
+  // Seksi II Vol.3 â€” indeks Penyebab Luar (cedera & keracunan).
   useEffect(() => {
     if (mode !== "index" || idxSrc !== "ext" || ext || extBusy) return;
     setExtBusy(true);
@@ -442,30 +441,6 @@ export default function Page() {
     return () => window.removeEventListener("keydown", fn);
   }, [showFb]);
 
-  // Tidak ada backend: pesan disusun jadi mailto ke alamat pemilik aplikasi.
-  const sendFeedback = () => {
-    const mail = fbEmail.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
-      setFbErr(t.fbErrEmail);
-      return;
-    }
-    if (fbMsg.trim().length < 10) {
-      setFbErr(t.fbErrMsg);
-      return;
-    }
-    const name = fbName.trim() || "-";
-    const subject = `Masukan ICD-10 Browser${name !== "-" ? ` - ${name}` : ""}`;
-    const body = [`Nama: ${name}`, `Email: ${mail}`, "", fbMsg.trim()].join("\r\n");
-    setFbErr(null);
-    // Jangkar lebih andal daripada location.href untuk skema mailto.
-    const a = document.createElement("a");
-    a.href = `mailto:${FB_MAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    a.rel = "noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
   const pickLang = (l: Lang) => {
     setLang(l);
     saveLS(LS_LANG, l);
@@ -477,11 +452,11 @@ export default function Page() {
     paneRef.current?.scrollTo({ top: 0 });
   }, [sel]);
   // Kode indeks sering berbentuk "X36.-" (digit ke-4 belum ditentukan) atau
-  // berpenanda †/‡/*. Buang dulu, lalu mundur ke kategori 3 karakter bila
+  // berpenanda â€ /â€¡/*. Buang dulu, lalu mundur ke kategori 3 karakter bila
   // subkategorinya tidak ada di Tabular.
   const navTarget = (raw: string) => {
     if (!data) return null;
-    const base = navCode(raw.replace(/[†‡*]/g, ""));
+    const base = navCode(raw.replace(/[â€ â€¡*]/g, ""));
     if (getNode(data, base)) return base;
     if (getNode(data, base.slice(0, 3))) return base.slice(0, 3);
     return null;
@@ -531,7 +506,7 @@ export default function Page() {
     [data, hits, q, searching]
   );
 
-  // ===== Indeks A–Z (Vol.3): alfabet penyakit + penyebab luar =====
+  // ===== Indeks Aâ€“Z (Vol.3): alfabet penyakit + penyebab luar =====
   // Keduanya memakai bentuk data yang sama (AlphaEntry), jadi satu set memo
   // dipakai untuk dua sumber; hanya berkas yang dimuat berbeda.
   const idxData: AlphaIndex | null = idxSrc === "alpha" ? idx : idxSrc === "ext" ? ext : null;
@@ -614,7 +589,7 @@ export default function Page() {
       : tblSearch.hits.filter((i) => tbl && lvlOk(tbl.entries[i][1], tblLead)).length
     : (tblBrowse.rows[letter] ?? []).filter((i) => tbl && lvlOk(tbl.entries[i][1], tblLead)).length;
 
-  // Rujukan "lihat: …" bisa berupa jalur ("Neoplasm, sinus"), sedangkan entri
+  // Rujukan "lihat: â€¦" bisa berupa jalur ("Neoplasm, sinus"), sedangkan entri
   // hanya menyimpan istilahnya sendiri. resolveSee mencocokkan lewat rantai induk,
   // lalu daftar digulir ke baris itu (bukan mencari teks jalur yang tak akan ketemu).
   const [jump, setJump] = useState<{ i: number; n: number } | null>(null);
@@ -640,7 +615,7 @@ export default function Page() {
     const levels = entries.map((e) => (table ? (e as TableEntry)[1] : (e as AlphaEntry)[2]));
     let i = resolveSee(terms, levels, target);
     // Rujukan kadang menambah keterangan yang tak ada di daftar tujuan
-    // ("Neoplasm, connective tissue, malignant" — kolom tabel yang menentukan
+    // ("Neoplasm, connective tissue, malignant" â€” kolom tabel yang menentukan
     // keganasan). Coba bertahap tanpa bagian terakhir.
     for (let k = 0; i < 0 && k < 2; k++) {
       const parts = splitSeeTarget(target);
@@ -651,11 +626,11 @@ export default function Page() {
     return i >= 0 && land(entries, table, leadLevel, i);
   };
   // Rujukan ke awalan ("Levo-", "Sulf-", "specific protein") tidak punya entri
-  // persis, jadi dicari entri pertama yang berawalan itu — utamakan lead term.
+  // persis, jadi dicari entri pertama yang berawalan itu â€” utamakan lead term.
   const jumpPrefix = (entries: (AlphaEntry | TableEntry)[], table: boolean, leadLevel: number, target: string) => {
     const lvl = (k: number) => (table ? (entries[k] as TableEntry)[1] : (entries[k] as AlphaEntry)[2]);
     const lower = entries.map((e) => e[0].toLowerCase());
-    // "specific substance" → "substance": kata umumnya dibuang lebih dulu.
+    // "specific substance" â†’ "substance": kata umumnya dibuang lebih dulu.
     const tries = [target.trim(), target.trim().replace(/^specific\s+/i, "")];
     for (const raw of tries) {
       const p = raw.replace(/[-\s]+$/, "").toLowerCase();
@@ -686,12 +661,12 @@ export default function Page() {
     requestAnimationFrame(() => listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" }));
     return true;
   };
-  // Rujukan berkode ("Note at category O80.-", "categories D50–D77",
-  // "E10–E14 with fourth character .6") tak punya entri indeks; buka kodenya.
+  // Rujukan berkode ("Note at category O80.-", "categories D50â€“D77",
+  // "E10â€“E14 with fourth character .6") tak punya entri indeks; buka kodenya.
   const gotoCodeRef = (target: string) => {
     if (!data) return false;
     const t = target.trim();
-    const range = /^([A-Z]\d{2})\s*[–—-]\s*[A-Z]\d{2}\s+with fourth character\s*\.?\s*(\d)/i.exec(t);
+    const range = /^([A-Z]\d{2})\s*[â€“â€”-]\s*[A-Z]\d{2}\s+with fourth character\s*\.?\s*(\d)/i.exec(t);
     const note = /^note at\s+(?:category\s+)?([A-Z]\d{2})(?:\.(\d))?/i.exec(t);
     const cats = /^categories?\s+([A-Z]\d{2})/i.exec(t);
     const code = range ? `${range[1]}.${range[2]}` : note ? (note[2] ? `${note[1]}.${note[2]}` : note[1]) : cats ? cats[1] : "";
@@ -716,7 +691,7 @@ export default function Page() {
     target = target.replace(/^also\s*/i, "").trim();
     if (!target) return;
     // Blok neoplasma ada di tabel terpisah; di indeks alfabet hanya tersisa
-    // baris kepalanya, jadi rujukan "Neoplasm, …" selalu diarahkan ke sana.
+    // baris kepalanya, jadi rujukan "Neoplasm, â€¦" selalu diarahkan ke sana.
     if (isList && /^neoplas/i.test(target.trim())) {
       setPendingSee({ target, src: "neo" });
       setIdxSrc("neo");
@@ -799,7 +774,7 @@ export default function Page() {
   const letterCounts = isList ? idxBrowse.counts : isTbl ? tblBrowse.counts : {};
 
   // Header lengket di atas daftar: saat digulir, tampilkan jalur induk baris
-  // teratas (lead term > subterm) supaya pembaca tidak kehilangan konteks —
+  // teratas (lead term > subterm) supaya pembaca tidak kehilangan konteks â€”
   // pengganti penanda "continued" di buku cetak.
   const [stickyPath, setStickyPath] = useState<{ i: number; t: string }[]>([]);
   const stickyRaf = useRef(0);
@@ -896,7 +871,7 @@ export default function Page() {
           {(path || see) && (
             <span className="mt-0.5 block truncate text-[11px] text-slate-500 dark:text-slate-400">
               {path}
-              {path && see ? " · " : ""}
+              {path && see ? " Â· " : ""}
               {see && (
                 <button
                   onClick={() => gotoSee(see)}
@@ -913,7 +888,7 @@ export default function Page() {
             cOk ? (
               <button
                 onClick={() => go(c)}
-                title={`${t.detail} — ${c}`}
+                title={`${t.detail} â€” ${c}`}
                 className="rounded border border-blue-200 bg-blue-50 px-1.5 py-px font-mono text-[11.5px] font-bold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300 dark:hover:border-sky-500"
               >
                 {c}
@@ -929,7 +904,7 @@ export default function Page() {
           {c2 && c2Ok && (
             <button
               onClick={() => go(c2)}
-              title={`${t.detail} — ${c2}`}
+              title={`${t.detail} â€” ${c2}`}
               className="rounded border border-amber-200 bg-amber-50 px-1.5 py-px font-mono text-[11.5px] font-bold text-amber-700 transition hover:border-amber-400 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300 dark:hover:border-amber-600"
             >
               {c2}
@@ -1000,7 +975,7 @@ export default function Page() {
                 <button
                   key={ci}
                   onClick={() => go(target)}
-                  title={`${tblCols[ci]} — ${c}`}
+                  title={`${tblCols[ci]} â€” ${c}`}
                   className={`rounded border px-1.5 py-px font-mono text-[11px] font-bold transition ${TBL_CHIP[ci]}`}
                 >
                   {c}
@@ -1008,7 +983,7 @@ export default function Page() {
               ) : (
                 <span
                   key={ci}
-                  title={`${tblCols[ci]} — ${c}`}
+                  title={`${tblCols[ci]} â€” ${c}`}
                   className="rounded border border-slate-200 bg-slate-50 px-1.5 py-px font-mono text-[11px] font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
                 >
                   {c}
@@ -1122,7 +1097,7 @@ export default function Page() {
   const copyCode = async () => {
     if (!node) return;
     try {
-      await navigator.clipboard.writeText(`${node.code} — ${preferred(node)}`);
+      await navigator.clipboard.writeText(`${node.code} â€” ${preferred(node)}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {}
@@ -1178,7 +1153,7 @@ export default function Page() {
           );
         if (s.morph)
           return (
-            <button key={i} className="codelink" onClick={() => openMorph(s.morph!)} title={`${t.morphOpen} — ${s.morph}`}>
+            <button key={i} className="codelink" onClick={() => openMorph(s.morph!)} title={`${t.morphOpen} â€” ${s.morph}`}>
               {s.text}
             </button>
           );
@@ -1191,7 +1166,7 @@ export default function Page() {
             key={i}
             className="codelink"
             onClick={() => go(tgt)}
-            title={`${n ? preferred(n) : tgt}${approx ? ` · ${t.refBase} ${tgt}` : ""}`}
+            title={`${n ? preferred(n) : tgt}${approx ? ` Â· ${t.refBase} ${tgt}` : ""}`}
           >
             {s.text}
           </button>
@@ -1274,7 +1249,7 @@ export default function Page() {
               <HBtn title={t.print} onClick={() => window.print()}><Printer size={15} /><span className="max-sm:hidden">{t.print}</span></HBtn>
               <HBtn title={t.guide} onClick={() => setShowGuide(true)}><BookOpen size={15} /><span className="max-sm:hidden">{t.guide}</span></HBtn>
               <button
-                onClick={() => { setFbErr(null); setShowFb(true); }}
+                onClick={() => setShowFb(true)}
                 title={t.feedback}
                 className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
               >
@@ -1452,7 +1427,7 @@ export default function Page() {
               </p>
             ) : (
               <>
-                <div className="flex flex-wrap gap-1" role="group" aria-label="A–Z">
+                <div className="flex flex-wrap gap-1" role="group" aria-label="Aâ€“Z">
                   {ALPHA_LETTERS.map((L) => {
                     const n = letterCounts[L] ?? 0;
                     const active = !idxSearching && letter === L;
@@ -1465,7 +1440,7 @@ export default function Page() {
                         }}
                         disabled={n === 0}
                         aria-pressed={active}
-                        title={`${L} — ${n}`}
+                        title={`${L} â€” ${n}`}
                         className={`h-6 w-6 rounded-md text-[11.5px] font-semibold transition disabled:opacity-30 ${
                           active
                             ? "bg-teal-700 text-white"
@@ -1505,9 +1480,9 @@ export default function Page() {
                       {idxSrc === "alpha"
                         ? t.indexSource
                         : idxData
-                          ? t.idxExtSrc(idxData.meta.pages.replace("-", "–"))
+                          ? t.idxExtSrc(idxData.meta.pages.replace("-", "â€“"))
                           : tbl
-                            ? t.idxTblSrc(tbl.meta.pages.replace("-", "–"))
+                            ? t.idxTblSrc(tbl.meta.pages.replace("-", "â€“"))
                             : ""}
                     </span>
                   </span>
@@ -1553,7 +1528,7 @@ export default function Page() {
                           </span>
                           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500 dark:text-slate-400">
                             <span className="inline-flex items-center gap-0.5"><ListOrdered size={10} /> {t.specialRows(tb.rows.length)}</span>
-                            <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.specialPages(tb.pages.replace("-", "–"))}</span>
+                            <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.specialPages(tb.pages.replace("-", "â€“"))}</span>
                             <span className="inline-flex items-center gap-0.5"><ChevronRight size={10} /> {t.specialOpen}</span>
                           </span>
                         </span>
@@ -1588,7 +1563,7 @@ export default function Page() {
                           className="flex min-w-0 items-center gap-1 text-left font-medium text-teal-800 transition hover:text-teal-900 dark:text-teal-200 dark:hover:text-teal-100"
                         >
                           <ArrowUp size={12} className="shrink-0 opacity-70" aria-hidden />
-                          <span className="truncate">{stickyPath.map((p) => p.t).join(" › ")}</span>
+                          <span className="truncate">{stickyPath.map((p) => p.t).join(" â€º ")}</span>
                         </button>
                       )}
                     </div>
@@ -1742,7 +1717,7 @@ export default function Page() {
                   {trail[0]?.code === "II" && node.kind === "category" && (
                     <button
                       onClick={() => openMorph()}
-                      title={`${t.morphOpen} — ${t.morphTitle}`}
+                      title={`${t.morphOpen} â€” ${t.morphTitle}`}
                       className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-px text-[11px] font-medium transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 ${TONE.violet}`}
                     >
                       <Dna size={12} /> {t.morphBadge}
@@ -1834,7 +1809,7 @@ export default function Page() {
                   // 4/5 karakter (mis. F10.2, V01.00), tetap pakai induknya agar baris bisa diklik.
                   const base = pos === "5" ? node.code.slice(0, 5) : node.code.slice(0, 3);
                   // Baris aktif: kode node sendiri untuk karakter ke-5, atau leluhur
-                  // 5-karakter untuk karakter ke-4 (V01.00 → baris V01.0 ikut aktif).
+                  // 5-karakter untuk karakter ke-4 (V01.00 â†’ baris V01.0 ikut aktif).
                   const own = pos === "5" ? node.code : node.code.slice(0, 5);
                   const activeSub = m.subs.find((s) => subFull(base, m.code, s.c) === own);
                   // Karakter ke-5 baru punya kode setelah karakter ke-4 dipilih.
@@ -1843,7 +1818,7 @@ export default function Page() {
                   const collapsible = !!activeSub && m.subs.length > 3;
                   // Modifier yang menghasilkan kode yang sudah ada sebagai node nyata
                   // (mis. place of occurrence pada X34 yang sudah punya .0-.9) tidak
-                  // ditampilkan — labelnya akan menimpa makna kode asli.
+                  // ditampilkan â€” labelnya akan menimpa makna kode asli.
                   const collides = m.subs.some((s) => {
                     const full = subFull(base, m.code, s.c);
                     return !!full && !!data.nodes[full];
@@ -1864,9 +1839,9 @@ export default function Page() {
                               <span>
                                 {s.label}
                                 {full && !active && (
-                                  <span className="text-slate-500 dark:text-slate-400"> — <span className="font-mono">{full}</span></span>
+                                  <span className="text-slate-500 dark:text-slate-400"> â€” <span className="font-mono">{full}</span></span>
                                 )}
-                                {s.usage === "dagger" && <span title={t.daggerE}> †</span>}
+                                {s.usage === "dagger" && <span title={t.daggerE}> â€ </span>}
                                 {s.usage === "aster" && <span title={t.asteriskM}> *</span>}
                               </span>
                             </>
@@ -1924,7 +1899,7 @@ export default function Page() {
                           </span>
                           <span>
                             {activeSub!.label}
-                            {activeSub!.usage === "dagger" && <span title={t.daggerE}> †</span>}
+                            {activeSub!.usage === "dagger" && <span title={t.daggerE}> â€ </span>}
                             {activeSub!.usage === "aster" && <span title={t.asteriskM}> *</span>}
                           </span>
                         </p>
@@ -2138,13 +2113,13 @@ export default function Page() {
 
       <footer className="no-print mx-auto w-full max-w-[1440px] shrink-0 px-4 pb-3 text-xs text-slate-600 dark:text-slate-400">
         {t.footerMid}{" "}
-        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/2010/en" target="_blank" rel="noreferrer">WHO Browser 2010 <ExternalLink size={11} /></a> •{" "}
-        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/Content/statichtml/ICD10Volume2_en_2010.pdf" target="_blank" rel="noreferrer">Manual Vol.2 (PDF) <ExternalLink size={11} /></a> •{" "}
+        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/2010/en" target="_blank" rel="noreferrer">WHO Browser 2010 <ExternalLink size={11} /></a> â€¢{" "}
+        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/Content/statichtml/ICD10Volume2_en_2010.pdf" target="_blank" rel="noreferrer">Manual Vol.2 (PDF) <ExternalLink size={11} /></a> â€¢{" "}
         <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/Help/en" target="_blank" rel="noreferrer">User Guide <ExternalLink size={11} /></a>{" "}
         {"\u00b7"}{" "}
         <button
           className="inline-flex items-center gap-0.5 font-semibold text-teal-700 hover:underline dark:text-teal-300"
-          onClick={() => { setFbErr(null); setShowFb(true); }}
+          onClick={() => setShowFb(true)}
         >
           {t.feedback}
         </button>
@@ -2170,7 +2145,7 @@ export default function Page() {
               <div className="min-w-0 flex-1">
                 <h2 className="m-0 text-[15px] font-bold leading-tight">{matrixTbl.title[lang]}</h2>
                 <p className="m-0 mt-0.5 flex flex-wrap items-center gap-x-2 text-[11.5px] text-slate-500 dark:text-slate-400">
-                  <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.specialPages(matrixTbl.pages.replace("-", "–"))}</span>
+                  <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.specialPages(matrixTbl.pages.replace("-", "â€“"))}</span>
                   <span className="inline-flex items-center gap-0.5"><ListOrdered size={10} /> {t.specialRows(matrixTbl.rows.length)}</span>
                   <span className="inline-flex items-center gap-0.5"><Table2 size={10} /> {matrixTbl.cols.length} {t.specialCols.toLowerCase()}</span>
                 </p>
@@ -2264,19 +2239,19 @@ export default function Page() {
                               key={ci}
                               className={`border-b border-l border-slate-100 px-1 py-1 text-center align-middle dark:border-white/5 ${bg}`}
                             >
-                              {!raw ? null : /^[–—-]+$/.test(raw) ? (
+                              {!raw ? null : /^[â€“â€”-]+$/.test(raw) ? (
                                 <span aria-hidden className="text-slate-500 dark:text-slate-400">-</span>
                               ) : live ? (
                                 <button
                                   onClick={() => { go(live); setMatrix(null); }}
-                                  title={`${matrixTbl.cols[ci]} — ${raw}`}
+                                  title={`${matrixTbl.cols[ci]} â€” ${raw}`}
                                   className="rounded border border-teal-200 bg-teal-50 px-1.5 py-px font-mono text-[11px] font-bold text-teal-800 transition hover:border-teal-400 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/50 dark:text-teal-300 dark:hover:border-teal-500"
                                 >
                                   {raw}
                                 </button>
                               ) : (
                                 <span
-                                  title={target ? `${raw} — ${t.specialCellNo}` : expanded ? `${expanded} — ${t.specialSuffix}` : t.specialSuffix}
+                                  title={target ? `${raw} â€” ${t.specialCellNo}` : expanded ? `${expanded} â€” ${t.specialSuffix}` : t.specialSuffix}
                                   className="rounded border border-slate-200 bg-slate-50 px-1.5 py-px font-mono text-[11px] font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
                                 >
                                   {raw}
@@ -2293,7 +2268,7 @@ export default function Page() {
             </div>
 
             <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-2 text-[11px] text-slate-500 dark:border-white/10 dark:text-slate-400">
-              <span>{t.idxTblSrc(matrixTbl.pages.replace("-", "–"))}</span>
+              <span>{t.idxTblSrc(matrixTbl.pages.replace("-", "â€“"))}</span>
               <button
                 onClick={() => setMatrix(null)}
                 className="inline-flex items-center gap-1 rounded-lg bg-pmik-orange px-3 py-1.5 text-[12px] font-semibold text-navy-950 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
@@ -2325,7 +2300,7 @@ export default function Page() {
               <div className="min-w-0 flex-1">
                 <h2 className="m-0 text-[15px] font-bold leading-tight">{t.morphTitle}</h2>
                 <p className="m-0 mt-0.5 flex flex-wrap items-center gap-x-2 text-[11.5px] text-slate-500 dark:text-slate-400">
-                  <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.morphSource((morph?.meta.pdfPages ?? "1066–1084").replace("-", "–"))}</span>
+                  <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.morphSource((morph?.meta.pdfPages ?? "1066â€“1084").replace("-", "â€“"))}</span>
                   {morph && <span className="inline-flex items-center gap-0.5"><ListOrdered size={10} /> {t.morphCount(morph.entries.length)}</span>}
                 </p>
               </div>
@@ -2360,12 +2335,12 @@ export default function Page() {
                           <span className="flex flex-wrap gap-1">
                             {b.cats.split(",").map((part) => {
                               const raw = part.trim();
-                              const first = raw.split(/[–-]/)[0].trim();
+                              const first = raw.split(/[â€“-]/)[0].trim();
                               return navTarget(first) ? (
                                 <button
                                   key={raw}
                                   onClick={() => { go(first); setMorphOpen(false); }}
-                                  title={`${t.detail} — ${first}`}
+                                  title={`${t.detail} â€” ${first}`}
                                   className="rounded border border-violet-200 bg-violet-50 px-1.5 py-px font-mono text-[11px] font-bold text-violet-800 transition hover:border-violet-400 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300"
                                 >
                                   {raw}
@@ -2425,7 +2400,7 @@ export default function Page() {
                         <div className="flex items-start gap-2 border-b border-slate-100 py-1 last:border-0 dark:border-white/5">
                           <span className="w-[62px] shrink-0 font-mono text-[12px] font-bold text-navy-900 dark:text-sky-200">{e.c}</span>
                           <span
-                            title={bh ? `/${bh.b} — ${lang === "en" ? bh.en : bh.id}` : `/${morphBehav(e.c)}`}
+                            title={bh ? `/${bh.b} â€” ${lang === "en" ? bh.en : bh.id}` : `/${morphBehav(e.c)}`}
                             className="mt-px shrink-0 rounded border border-violet-200 bg-violet-50 px-1 py-px font-mono text-[10.5px] font-bold text-violet-700 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300"
                           >
                             /{morphBehav(e.c)}
@@ -2438,7 +2413,7 @@ export default function Page() {
                                   <button
                                     key={s}
                                     onClick={() => { go(s); setMorphOpen(false); }}
-                                    title={`${t.morphSite} — ${s}`}
+                                    title={`${t.morphSite} â€” ${s}`}
                                     className="rounded border border-teal-200 bg-teal-50 px-1.5 py-px font-mono text-[10.5px] font-bold text-teal-800 transition hover:border-teal-400 dark:border-teal-800 dark:bg-teal-950/50 dark:text-teal-300"
                                   >
                                     {s}
@@ -2472,8 +2447,8 @@ export default function Page() {
 
       {showFb && (
         <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 p-3 backdrop-blur-sm sm:p-4" onClick={() => setShowFb(false)}>
-          <div ref={fbDlg} role="dialog" aria-modal="true" aria-label={t.fbTitle} className="flex max-h-[88vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-navy-950/10 dark:bg-navy-900 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
-            <header className="flex shrink-0 items-start gap-3 border-b border-slate-100 bg-gradient-to-r from-teal-50 to-white px-5 py-4 dark:border-white/10 dark:from-teal-950/40 dark:to-navy-900">
+          <div ref={fbDlg} role="dialog" aria-modal="true" aria-label={t.fbTitle} className="flex h-[88vh] max-h-[88vh] w-full max-w-[720px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-navy-950/10 dark:bg-navy-900 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
+            <header className="flex shrink-0 items-start gap-3 border-b border-slate-100 bg-gradient-to-r from-teal-50 to-white px-5 py-3.5 dark:border-white/10 dark:from-teal-950/40 dark:to-navy-900">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white shadow-sm dark:bg-teal-700">
                 <MessageSquare size={18} />
               </span>
@@ -2491,68 +2466,29 @@ export default function Page() {
               </button>
             </header>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-              <label htmlFor="fb-name" className="block text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
-                {t.fbName} <span className="font-normal text-slate-400">({t.fbNameHint})</span>
-              </label>
-              <input
-                id="fb-name"
-                value={fbName}
-                onChange={(e) => setFbName(e.target.value)}
-                autoComplete="name"
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13.5px] text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-white/15 dark:bg-navy-950 dark:text-slate-100"
+            <div className="min-h-0 flex-1 bg-slate-50 dark:bg-navy-950">
+              <iframe
+                src={FB_FORM}
+                title={t.fbTitle}
+                loading="lazy"
+                className="h-full w-full border-0"
               />
-
-              <label htmlFor="fb-email" className="mt-3 block text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
-                {t.fbEmail} <span className="font-normal text-slate-400">({t.fbEmailHint})</span>
-              </label>
-              <input
-                id="fb-email"
-                type="email"
-                value={fbEmail}
-                onChange={(e) => { setFbEmail(e.target.value); setFbErr(null); }}
-                autoComplete="email"
-                required
-                aria-invalid={fbErr === t.fbErrEmail}
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13.5px] text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-white/15 dark:bg-navy-950 dark:text-slate-100"
-              />
-
-              <label htmlFor="fb-msg" className="mt-3 block text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
-                {t.fbMsg} <span className="font-normal text-slate-400">({t.fbMsgHint})</span>
-              </label>
-              <textarea
-                id="fb-msg"
-                value={fbMsg}
-                onChange={(e) => { setFbMsg(e.target.value); setFbErr(null); }}
-                rows={5}
-                placeholder={t.fbMsgPh}
-                className="mt-1 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13.5px] leading-relaxed text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 dark:border-white/15 dark:bg-navy-950 dark:text-slate-100 dark:placeholder:text-slate-500"
-              />
-
-              {fbErr && (
-                <p role="alert" className="mt-2 flex items-center gap-1.5 text-[12.5px] font-medium text-red-600 dark:text-red-400">
-                  <TriangleAlert size={14} /> {fbErr}
-                </p>
-              )}
-
-              <p className="mt-3 flex gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11.5px] leading-relaxed text-slate-600 dark:border-white/10 dark:bg-navy-950/50 dark:text-slate-400">
-                <Info size={13} className="mt-0.5 shrink-0" />
-                <span className="min-w-0 flex-1">{t.fbNote}</span>
-              </p>
             </div>
 
-            <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-3 dark:border-white/10 dark:bg-navy-950/40">
-              <button
-                className="rounded-lg px-3 py-2 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-400 dark:text-slate-300 dark:hover:bg-white/10"
-                onClick={() => setShowFb(false)}
+            <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-2.5 dark:border-white/10 dark:bg-navy-950/40">
+              <a
+                href={FB_FORM_NEW}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[12px] font-medium text-teal-700 hover:underline dark:text-teal-300"
               >
-                {t.fbCancel}
-              </button>
+                {t.fbOpenNew} <ExternalLink size={11} />
+              </a>
               <button
                 className="inline-flex items-center gap-1.5 rounded-lg bg-pmik-orange px-4 py-2 text-[13px] font-semibold text-navy-950 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
-                onClick={sendFeedback}
+                onClick={() => setShowFb(false)}
               >
-                <Check size={14} /> {t.fbSend}
+                <Check size={14} /> {t.close}
               </button>
             </footer>
           </div>

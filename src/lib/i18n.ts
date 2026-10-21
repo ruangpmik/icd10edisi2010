@@ -13,18 +13,7 @@ export interface UiStrings {
   feedback: string;
   fbTitle: string;
   fbSub: string;
-  fbName: string;
-  fbNameHint: string;
-  fbEmail: string;
-  fbEmailHint: string;
-  fbMsg: string;
-  fbMsgHint: string;
-  fbMsgPh: string;
-  fbSend: string;
-  fbCancel: string;
-  fbNote: string;
-  fbErrEmail: string;
-  fbErrMsg: string;
+  fbOpenNew: string;
   toLight: string;
   toDark: string;
   searchPh: string;
@@ -182,18 +171,7 @@ const ID: UiStrings = {
   feedback: "Masukan",
   fbTitle: "Kirim Masukan",
   fbSub: "Laporkan kode yang salah, catatan yang hilang, atau tampilan yang mengganggu.",
-  fbName: "Nama",
-  fbNameHint: "Opsional. Boleh dikosongkan atau pakai nama samaran.",
-  fbEmail: "Email",
-  fbEmailHint: "Wajib, untuk balasan.",
-  fbMsg: "Masukan",
-  fbMsgHint: "Sebutkan kode dan volume bila ada.",
-  fbMsgPh: "Contoh: Kode M17.1 tidak muncul di pohon Volume 1, padahal ada di daftar Tabular. Mohon dicek.",
-  fbSend: "Kirim",
-  fbCancel: "Batal",
-  fbNote: "Pesan dikirim lewat aplikasi email Anda ke ruangpmik@gmail.com. Situs ini tidak menyimpan data apa pun.",
-  fbErrEmail: "Alamat email belum benar.",
-  fbErrMsg: "Tulis masukan minimal 10 karakter.",
+  fbOpenNew: "Buka di tab baru",
   toLight: "Mode terang",
   toDark: "Mode gelap",
   searchPh: "Cari kode / diagnosis…",
@@ -370,18 +348,7 @@ const EN: UiStrings = {
   feedback: "Feedback",
   fbTitle: "Send Feedback",
   fbSub: "Report a wrong code, a missing note, or a layout that gets in the way.",
-  fbName: "Name",
-  fbNameHint: "Optional. Leave blank or use a pseudonym.",
-  fbEmail: "Email",
-  fbEmailHint: "Required, so we can reply.",
-  fbMsg: "Feedback",
-  fbMsgHint: "Mention the code and volume when you can.",
-  fbMsgPh: "Example: Code M17.1 is missing from the Volume 1 tree, but it is in the Tabular list. Please check.",
-  fbSend: "Send",
-  fbCancel: "Cancel",
-  fbNote: "Your message is sent through your own email app to ruangpmik@gmail.com. This site stores nothing.",
-  fbErrEmail: "That email address does not look right.",
-  fbErrMsg: "Please write at least 10 characters.",
+  fbOpenNew: "Open in a new tab",
   toLight: "Light mode",
   toDark: "Dark mode",
   searchPh: "Search code / diagnosis…",
