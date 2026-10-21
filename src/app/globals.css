@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* badge sumber hasil (ala WHO) */
+.src { display: inline-block; font-size: 10.5px; padding: 1px 6px; border-radius: 4px; margin-left: 4px; border: 1px solid; white-space: nowrap; }
+.src-kode { background: #fde8e8; color: #b91c1c; border-color: #f3b4b4; }
+.src-judul { background: #e6f6e6; color: #15803d; border-color: #a9dba9; }
+.src-inklusi { background: #e3efff; color: #1d4ed8; border-color: #aecbfa; }
+.src-indeks { background: #fdf0e0; color: #c2410c; border-color: #f2c99b; }
+.src-eksklusi { background: #f1e8fd; color: #7e22ce; border-color: #d3bdf5; }
+.src-lainnya { background: #eef1f5; color: #475569; border-color: #cbd5e1; }
+.dark .src-kode { background: #3f1a1a; color: #fca5a5; border-color: #7f2d2d; }
+.dark .src-judul { background: #12341f; color: #86efac; border-color: #245c36; }
+.dark .src-inklusi { background: #16294d; color: #93c5fd; border-color: #2b4a7f; }
+.dark .src-indeks { background: #3d2410; color: #fdba74; border-color: #7c4416; }
+.dark .src-eksklusi { background: #2c1747; color: #d8b4fe; border-color: #5b3486; }
+.dark .src-lainnya { background: #1e293b; color: #cbd5e1; border-color: #475569; }
+
+/* link kode silang */
+.codelink {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: #1d4ed8; font-family: Consolas, "Courier New", monospace;
+  font-weight: 700; font-size: inherit; text-decoration: underline;
+}
+.dark .codelink { color: #93c5fd; }
+
+/* penanda tree */
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #16a34a; margin-left: 6px; flex: none; }
+.notedot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: #f97316; margin-left: 6px; flex: none; }
+
+/* panel detail: baris subdivisi aktif disembunyikan saat daftar lengkap dibuka
+   (agar tidak tampil dua kali) */
+details[open] + .subdiv-active { display: none; }
+
+@media print {
+  .no-print { display: none !important; }
+
+  /* cetak hanya panel detail, tanpa scroll & tanpa terpotong */
+  html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+  #main-content { display: block !important; max-width: none !important; padding: 0 !important; gap: 0 !important; }
+  #main-content > section {
+    overflow: visible !important;
+    max-height: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  #main-content .overflow-y-auto,
+  #main-content .flex-1 { overflow: visible !important; max-height: none !important; height: auto !important; }
+  #detail-head { position: static !important; }
+
+  /* tema gelap tetap tercetak di atas kertas putih */
+  .dark #main-content, .dark #main-content * {
+    background-color: #fff !important;
+    color: #111 !important;
+    border-color: #d4d4d4 !important;
+  }
+}

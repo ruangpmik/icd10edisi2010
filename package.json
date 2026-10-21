@@ -1,0 +1,33 @@
+{
+  "name": "icd10-browser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ICD-10 2010 Version Browser (EN + Indonesia) — sejenis eComPress Viewer / Wd2Cn.",
+  "scripts": {
+    "build:data": "node scripts/build-data.mjs",
+    "dev": "next dev -p 3001",
+    "dev:lan": "next dev -H 0.0.0.0 -p 3001",
+    "build": "node scripts/build-data.mjs && next build",
+    "start": "next start -p 3001",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.20",
+    "lucide-react": "^1.56.0",
+    "next": "14.2.18",
+    "next-themes": "^0.4.6",
+    "postcss": "^8.4.47",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.13",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
