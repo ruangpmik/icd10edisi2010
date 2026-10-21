@@ -282,6 +282,47 @@ export default function Page() {
     } catch {}
   }, []);
 
+  // Penghalang salin sederhana: klik kanan, pilih teks, dan Ctrl+C/Ctrl+A
+  // dimatikan di area bacaan. Kolom isian tetap normal (pengguna perlu tempel).
+  // Ini pengaman visual, bukan proteksi teknis: berkas JSON tetap bisa diunduh.
+  useEffect(() => {
+    const editable = (el: EventTarget | null) => {
+      const n = el as HTMLElement | null;
+      if (!n || !n.tagName) return false;
+      const tag = n.tagName.toLowerCase();
+      return tag === "input" || tag === "textarea" || n.isContentEditable === true;
+    };
+    const onCtx = (e: MouseEvent) => {
+      if (!editable(e.target)) e.preventDefault();
+    };
+    const onCopy = (e: ClipboardEvent) => {
+      if (!editable(e.target)) e.preventDefault();
+    };
+    const onSelect = (e: Event) => {
+      if (!editable(e.target)) e.preventDefault();
+    };
+    const onDrag = (e: DragEvent) => {
+      if (!editable(e.target)) e.preventDefault();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || editable(e.target)) return;
+      const k = e.key.toLowerCase();
+      if (k === "c" || k === "x" || k === "a") e.preventDefault();
+    };
+    document.addEventListener("contextmenu", onCtx);
+    document.addEventListener("copy", onCopy);
+    document.addEventListener("selectstart", onSelect);
+    document.addEventListener("dragstart", onDrag);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("contextmenu", onCtx);
+      document.removeEventListener("copy", onCopy);
+      document.removeEventListener("selectstart", onSelect);
+      document.removeEventListener("dragstart", onDrag);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
   // Indeks Alfabet Vol.3 dimuat malas: hanya saat tab "Indeks A–Z" dibuka.
   useEffect(() => {
     if (mode !== "index" || idx || idxBusy) return;
@@ -1128,7 +1169,7 @@ export default function Page() {
   const matrixTbl = matrix && special ? special.tables.find((tb) => tb.id === matrix) ?? null : null;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-slate-100 text-slate-900 dark:bg-navy-950 dark:text-slate-100 lg:h-dvh">
+    <div className="wm-guard flex min-h-dvh flex-col bg-slate-100 text-slate-900 dark:bg-navy-950 dark:text-slate-100 lg:h-dvh">
       {/* ===== Header ===== */}
       <a
         href="#main-content"
@@ -1639,7 +1680,7 @@ export default function Page() {
                     </Badge>
                   )}
                   {status?.t === "semi" && (
-                    <Badge tone="amber" title={t.semiValidTitle(status.pos, status.n, status.eg.slice(0, 4).join(", "))}>
+                    <Badge tone="amber" title={(status.opt ? t.semiValidOptTitle : t.semiValidTitle)(status.pos, status.n, status.eg.slice(0, 4).join(", "))}>
                       {t.semiValid(status.pos)}
                     </Badge>
                   )}

@@ -33,6 +33,24 @@
    (agar tidak tampil dua kali) */
 details[open] + .subdiv-active { display: none; }
 
+/* Watermark atribusi. pointer-events: none supaya tidak menghalangi klik apa pun. */
+.wm {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0.16;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='200'%3E%3Ctext x='170' y='100' transform='rotate(-28 170 100)' text-anchor='middle' font-family='system-ui,sans-serif' font-size='19' font-weight='700' fill='%2394a3b8'%3ERUANGPMIK Property%3C/text%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 340px 200px;
+}
+
+/* Cegah pilih-teks di area bacaan; kolom isian tetap bisa dipilih & ditempel. */
+.wm-guard, .wm-guard * { -webkit-user-select: none; user-select: none; }
+.wm-guard input, .wm-guard textarea, .wm-guard [contenteditable="true"] {
+  -webkit-user-select: text; user-select: text;
+}
+
 @media print {
   .no-print { display: none !important; }
 
@@ -56,4 +74,7 @@ details[open] + .subdiv-active { display: none; }
     color: #111 !important;
     border-color: #d4d4d4 !important;
   }
+
+  /* watermark tetap tercetak */
+  .wm { display: block !important; opacity: 0.14 !important; }
 }

@@ -16,6 +16,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>
+        {/* Watermark atribusi; tidak menangkap klik (pointer-events: none). */}
+        <div className="wm" aria-hidden="true" />
       </body>
     </html>
   );

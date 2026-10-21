@@ -187,23 +187,25 @@ export function resolveVirtual(data: IcdData, query: string): VirtualResolve | n
 /** Status kelengkapan kode: final, atau masih butuh karakter ke-N. */
 export type CodeStatus =
   | { t: "valid"; len: number }
-  | { t: "semi"; pos: number; n: number; eg: string[] }
+  /** `opt` = karakter tambahan bersifat opsional (mis. 0 closed / 1 open pada S02). */
+  | { t: "semi"; pos: number; n: number; eg: string[]; opt?: boolean }
   | { t: "none" };
 
 const digitLen = (c: string) => c.replace(/\./g, "").length;
 
 export function codeStatus(data: IcdData, node: IcdNode): CodeStatus {
   const len = digitLen(node.code);
-  if (node.meta?.term === 1) return { t: "valid", len };
   if (node.kind !== "category") return { t: "none" };
-  const opts = node.children.length
-    ? node.children
-    : effectiveMods(data, node).flatMap((m) =>
-        m.subs.map((s) => subFull(node.code, m.code, s.c)).filter((x): x is string => !!x)
-      );
+  // Karakter ke-5 opsional (S02.1 -> S02.10/S02.11) datang dari modifier induk,
+  // jadi kode bertanda terminal pun belum tentu berhenti di situ.
+  const modOpts = effectiveMods(data, node).flatMap((m) =>
+    m.subs.map((s) => subFull(node.code, m.code, s.c)).filter((x): x is string => !!x)
+  );
+  const final = node.meta?.term === 1;
+  const opts = final ? modOpts : node.children.length ? node.children : modOpts;
   const next = opts.filter((c) => digitLen(c) === len + 1);
-  if (next.length === 0) return { t: "none" };
-  return { t: "semi", pos: len + 1, n: next.length, eg: next };
+  if (next.length === 0) return final ? { t: "valid", len } : { t: "none" };
+  return { t: "semi", pos: len + 1, n: next.length, eg: next, opt: final };
 }
 
 /** Node asli atau sintetis (virtual). */

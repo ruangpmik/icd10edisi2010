@@ -32,6 +32,7 @@ export interface UiStrings {
   notFinalTitle: string;
   semiValid: (pos: number) => string;
   semiValidTitle: (pos: number, n: number, eg: string) => string;
+  semiValidOptTitle: (pos: number, n: number, eg: string) => string;
   validTitle: (len: number) => string;
   morphBadge: string;
   morphTitle: string;
@@ -183,6 +184,7 @@ const ID: UiStrings = {
   notFinalTitle: "Kode ini punya sub-kategori yang lebih spesifik",
   semiValid: (pos) => `semi-valid — tersedia karakter ke-${pos}`,
   semiValidTitle: (pos, n, eg) => `Belum final: ada ${n} pilihan karakter ke-${pos} (mis. ${eg})`,
+  semiValidOptTitle: (pos, n, eg) => `Kode ini sudah bisa dipakai, tetapi masih punya ${n} karakter ke-${pos} opsional (mis. ${eg})`,
   validTitle: (len) => `Kode final ${len} karakter — siap dipakai untuk koding`,
   morphBadge: "tabel morfologi",
   morphTitle: "Morfologi neoplasma (ICD-O)",
@@ -347,6 +349,7 @@ const EN: UiStrings = {
   notFinalTitle: "This code has more specific sub-categories",
   semiValid: (pos) => `semi-valid — character ${pos} available`,
   semiValidTitle: (pos, n, eg) => `Not final: ${n} choices for character ${pos} (e.g. ${eg})`,
+  semiValidOptTitle: (pos, n, eg) => `Codable as is, but ${n} optional character-${pos} choices exist (e.g. ${eg})`,
   validTitle: (len) => `Final ${len}-character code — ready for coding`,
   morphBadge: "morphology table",
   morphTitle: "Morphology of neoplasms (ICD-O)",
