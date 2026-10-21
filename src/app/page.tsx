@@ -1654,7 +1654,7 @@ export default function Page() {
 
         {/* Panel kanan */}
         <section aria-label={t.detail} className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-navy-900">
-          <div ref={paneRef} className="min-h-[300px] flex-1 overflow-y-auto" style={{ fontSize: `${zoom}em` }}>
+          <div ref={paneRef} className="min-h-[300px] flex-1 overflow-y-auto" style={{ zoom }}>
             <div className="p-4 sm:p-5">
             {!node ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">{t.selectHint}</p>
@@ -2414,14 +2414,58 @@ export default function Page() {
       )}
 
       {showGuide && (
-        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 p-4 backdrop-blur-[2px]" onClick={() => setShowGuide(false)}>
-          <div ref={guideDlg} role="dialog" aria-modal="true" aria-label={t.guideTitle} className="max-h-[85vh] w-full max-w-[620px] overflow-auto rounded-xl bg-white p-5 shadow-2xl dark:bg-navy-900" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mt-0 flex items-center gap-2 text-lg font-bold"><BookOpen size={18} className="text-teal-600 dark:text-teal-400" /> {t.guideTitle} <span className="text-[13px] font-normal text-slate-500 dark:text-slate-400">{t.guideFrom}</span></h2>
-            <ol className="list-decimal space-y-1.5 pl-5 text-sm leading-relaxed">
-              {t.guideSteps.map((p, i) => <li key={i}>{p}</li>)}
-            </ol>
-            <p className="mt-2 text-[13px] text-slate-500 dark:text-slate-400">{t.guideNote}</p>
-            <button className="mt-2 flex items-center gap-1.5 rounded-lg bg-pmik-orange px-4 py-2 text-[13px] font-semibold text-navy-950 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400" onClick={() => setShowGuide(false)}><X size={14} /> {t.close}</button>
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 p-3 backdrop-blur-sm sm:p-4" onClick={() => setShowGuide(false)}>
+          <div ref={guideDlg} role="dialog" aria-modal="true" aria-label={t.guideTitle} className="flex max-h-[88vh] w-full max-w-[660px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-navy-950/10 dark:bg-navy-900 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
+            <header className="flex shrink-0 items-start gap-3 border-b border-slate-100 bg-gradient-to-r from-teal-50 to-white px-5 py-4 dark:border-white/10 dark:from-teal-950/40 dark:to-navy-900">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white shadow-sm dark:bg-teal-700">
+                <BookOpen size={18} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-[16.5px] font-bold leading-snug text-navy-900 dark:text-white">{t.guideTitle}</h2>
+                <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">{t.guideFrom}</p>
+              </div>
+              <button
+                onClick={() => setShowGuide(false)}
+                title={t.close}
+                aria-label={t.close}
+                className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500 dark:hover:bg-white/10 dark:hover:text-slate-200"
+              >
+                <X size={17} />
+              </button>
+            </header>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              <ol className="space-y-2.5">
+                {t.guideSteps.map((p, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="mt-px flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-teal-100 text-[11.5px] font-bold text-teal-800 ring-1 ring-teal-200 dark:bg-teal-900/50 dark:text-teal-200 dark:ring-teal-800">
+                      {i + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 text-[13.5px] leading-relaxed text-slate-700 dark:text-slate-200">{p}</span>
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mt-4 flex gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12.5px] leading-relaxed text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+                <Info size={15} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">{t.guideVolTitle}</p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 marker:text-amber-500">
+                    {t.guideVolItems.map((v, i) => <li key={i}>{v}</li>)}
+                  </ul>
+                  <p className="mt-1.5 border-t border-amber-200/70 pt-1.5 dark:border-amber-900/40">{t.guideNote}</p>
+                </div>
+              </div>
+            </div>
+
+            <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-3 dark:border-white/10 dark:bg-navy-950/40">
+              <button
+                className="inline-flex items-center gap-1.5 rounded-lg bg-pmik-orange px-4 py-2 text-[13px] font-semibold text-navy-950 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
+                onClick={() => setShowGuide(false)}
+              >
+                <Check size={14} /> {t.close}
+              </button>
+            </footer>
           </div>
         </div>
       )}

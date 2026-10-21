@@ -106,6 +106,8 @@ export interface UiStrings {
   guideTitle: string;
   guideFrom: string;
   guideSteps: string[];
+  guideVolTitle: string;
+  guideVolItems: string[];
   guideNote: string;
   close: string;
   selectHint: string;
@@ -271,7 +273,15 @@ const ID: UiStrings = {
     "Patuhi inclusion / exclusion di bawah kode, block, atau chapter yang dipilih.",
     "Tetapkan kode. Tanda † (dagger) = etiologi, * (asterisk) = manifestasi; kode keduanya bila diminta.",
   ],
-  guideNote: "Seluruh Volume 3 tersedia lewat tab “Indeks A–Z” di panel kiri: Indeks Alfabet (hlm. 11–688), Penyebab Luar/Seksi II (hlm. 691–740), Tabel Neoplasma (hlm. 456–491), Tabel Obat & Bahan Kimia (hlm. 742–881), serta Tabel Khusus berisi matriks Abortus (hlm. 18–19) dan Kecelakaan Lalu Lintas Darat (hlm. 692). Kolom “Istilah Indonesia” dari Kamus ICD lokal tetap berperan sebagai kamus. Selalu verifikasi kode terpilih di Tabular (panel detail).",
+  guideVolTitle: "Isi Volume 3 — tab “Indeks A–Z” di panel kiri",
+  guideVolItems: [
+    "Indeks Alfabet — hlm. 11–688",
+    "Penyebab Luar / Seksi II — hlm. 691–740",
+    "Tabel Neoplasma — hlm. 456–491",
+    "Tabel Obat & Bahan Kimia — hlm. 742–881",
+    "Tabel Khusus — matriks Abortus (hlm. 18–19) dan Kecelakaan Lalu Lintas Darat (hlm. 692)",
+  ],
+  guideNote: "Kolom “Istilah Indonesia” dari Kamus ICD lokal tetap berperan sebagai kamus. Selalu verifikasi kode terpilih di Tabular (panel detail).",
   close: "Tutup",
   selectHint: "Pilih kode di kiri atau dari hasil pencarian.",
   modeTree: "Pohon",
@@ -436,7 +446,15 @@ const EN: UiStrings = {
     "Observe inclusion / exclusion notes under the selected code, block or chapter.",
     "Assign the code. † (dagger) = aetiology, * (asterisk) = manifestation; code both when required.",
   ],
-  guideNote: "All of Volume 3 is available in the “A–Z Index” tab on the left: the Alphabetical Index (pp. 11–688), External Causes/Section II (pp. 691–740), the Neoplasm table (pp. 456–491), the Table of Drugs and Chemicals (pp. 742–881), plus Special Tables with the Abortion (pp. 18–19) and Land Transport (p. 692) matrices. The local ICD dictionary's “Indonesian terms” column remains as a dictionary. Always verify the selected code in the Tabular (detail panel).",
+  guideVolTitle: "Volume 3 contents — “A–Z Index” tab on the left",
+  guideVolItems: [
+    "Alphabetical Index — pp. 11–688",
+    "External Causes / Section II — pp. 691–740",
+    "Neoplasm table — pp. 456–491",
+    "Table of Drugs and Chemicals — pp. 742–881",
+    "Special tables — Abortion (pp. 18–19) and Land Transport (p. 692) matrices",
+  ],
+  guideNote: "The local ICD dictionary's “Indonesian terms” column remains a dictionary. Always verify the selected code in the Tabular list (detail panel).",
   close: "Close",
   selectHint: "Pick a code on the left or from the search results.",
   modeTree: "Tree",
