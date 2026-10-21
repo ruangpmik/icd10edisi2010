@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   title: "ICD-10 2010 Browser (EN+ID) — RUANGPMIK",
   description: "Browser ICD-10 2010 ClaML WHO — English + padanan Indonesia, sejenis eComPress Viewer.",
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/favicon.ico`,
+    apple: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/apple-touch-icon.png`,
   },
 };
 
