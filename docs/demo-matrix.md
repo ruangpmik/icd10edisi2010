@@ -45,4 +45,40 @@ Status: F2 (2026-10-28). Sumber kebenaran: `src/app/page.tsx`, `electron/main.js
 - Data kamus identik di kedua platform (SHA-256 tanpa `meta.builtAt`:
   `1c3abdb7…bd57ba`, 437 idTerms).
 - Upgrade in-place (Browser → Codex) tidak diuji karena `appId` berubah di F2;
-  jalur upgrade versi Codex diuji saat bump versi di F3.
+  jalur upgrade versi Codex diuji saat bump versi di F3 (Codex 0.2.0 → 0.3.0 diuji penuh di F4).
+
+## Keputusan demo web F4 (2026-10-28)
+
+**Status: web tetap publik, tanpa gating lisensi.** Keputusan ini eksplisit,
+bukan kelalaian.
+
+Alasan:
+
+1. Seluruh konten web adalah data publik (ICD-10 2010 WHO, kamus istilah ID
+   internal, modifiers). Tidak ada data proprietary yang dijual di web.
+2. Tidak ada fitur web yang bergantung pada server berbayar; lisensi hanya
+   mengikat aplikasi desktop.
+3. Menyembunyikan tombol/menu bukan kontrol lisensi. Kontrol yang tidak dapat
+   ditegakkan di backend tidak dipasang.
+
+Batas demo yang **tidak** diterapkan (dan mengapa):
+
+| Kontrol | Status | Alasan |
+|---|---|---|
+| Subset data / batas sesi di web | Tidak diterapkan | Data publik; pembatasan tanpa manfaat bisnis dan merusak akses publik |
+| Watermark paksa | Tidak diterapkan | Watermark RUANGPMIK sudah ada sebagai atribusi |
+| Login/entitlement web | Tidak diterapkan | Tidak ada akun web maupun fitur berbayar |
+| Pemeriksaan entitlement di backend untuk fitur web | Tidak relevan | Tidak ada endpoint/fitur proprietary di web |
+| Endpoint admin dari web | Tidak ada | Web hanya file statis `out/`; admin API terpisah, tidak diekspos |
+
+Kontrol yang berlaku:
+
+- Build web tidak memuat `license-server`, private key, token admin, atau
+  public key produksi (diverifikasi F4: `verify-artifact` pada asar desktop;
+  build web `out/` hanya berisi konten + data).
+- CSP hash-based, tanpa Node, tanpa IPC di web.
+- Terjemahan mesin EN→ID diblokir untuk UA Electron.
+
+Jika kelak ada fitur berbayar (mis. sinkron cloud), kontrol harus berupa
+pemeriksaan entitlement di backend — bukan menyembunyikan UI — dan keputusan
+ini harus ditinjau ulang.

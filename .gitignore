@@ -10,3 +10,10 @@ tsconfig.tsbuildinfo
 # Licensing server — secret & data lokal (JANGAN commit)
 license-server/keys/
 license-server/data/
+
+# Keyset trust hasil pilihan build (dibuat oleh scripts/select-keys.mjs).
+# Sumber kebenaran: electron/keysets/*.public-keys.json (public key saja).
+electron/public-keys.json
+
+# Artefak build keyset testing
+dist-test/

@@ -41,7 +41,17 @@ const server = spawn(process.execPath, ["server.mjs"], {
     LICENSE_DB: dbPath,
     LICENSE_ADMIN_TOKEN: ADMIN,
     LICENSE_LEASE_DAYS: "0.00023",
-    LICENSE_RATE_ACTIVATE: "25",
+    // Suite fungsional butuh banyak request; batas rate diuji terpisah di
+    // run-ops-tests.mjs dengan server dan DB sendiri.
+    LICENSE_RATE_ACTIVATE: "500",
+    LICENSE_RATE_ACTIVATE_KEY: "500",
+    LICENSE_RATE_ACTIVATE_INSTALLATION: "500",
+    LICENSE_RATE_RENEW: "500",
+    LICENSE_RATE_RENEW_LICENSE: "500",
+    LICENSE_RATE_DEACTIVATE: "500",
+    LICENSE_RATE_DEACTIVATE_LICENSE: "500",
+    LICENSE_RATE_ADMIN: "500",
+    LICENSE_RATE_ADMIN_ROLE: "500",
   },
   stdio: ["ignore", "pipe", "pipe"],
 });
@@ -272,13 +282,7 @@ async function main() {
   const big = await post("/v1/activate", { licenseKey: "ICD10-ZZZZZ-99999-XXXXX-YYYYY", installationId: uuid(), pad: "x".repeat(200000) });
   ok("payload > 64KB → 400", big.status === 400);
 
-  // rate limit: limit activate=25/menit; suite sudah pakai ~21 → kirim 8, harap 429
-  const rateRes = [];
-  for (let i = 0; i < 8; i++) {
-    rateRes.push((await post("/v1/activate", { licenseKey: "ICD10-RATET-AAAAA-AAAAA-AAAAA-AA" + i, installationId: uuid() })).status);
-  }
-  ok("rate limit activate: melewati limit → ada 429", rateRes.filter((s) => s === 429).length >= 1,
-    `429=${rateRes.filter((s) => s === 429).length}`);
+  // rate limit & peran admin diuji di run-ops-tests.mjs (server + DB terpisah)
 
   // ============ AUDIT & kebocoran ============
   const aud = await get(`/admin/audit?licenseId=${lic2.id}`, ADMIN);

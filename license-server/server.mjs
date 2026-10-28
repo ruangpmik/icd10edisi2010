@@ -17,7 +17,9 @@
 // Kebijakan:
 // - License key disimpan sebagai hash SHA-256, bukan mentah.
 // - Aktivasi atomik (transaksi) → race condition kuota terakhir aman.
-// - Rate limit per IP; payload dibatasi; error generik tanpa detail internal.
+// - Rate limit durable (SQLite): per IP + per license key/installation/lisensi;
+//   bertahan setelah restart. Kebijakan gagal: fail-open + audit.
+// - Peran admin (penuh) dan support (baca + lepas aktivasi).
 // - Audit log tanpa credential / token / key mentah.
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -26,6 +28,7 @@ import https from "node:https";
 import { config } from "./config.mjs";
 import { openDb } from "./db.mjs";
 import { loadSigningKeys, signLease, verifyJws, publicKeysOf } from "./jws.mjs";
+import { createRateLimiter, enforce } from "./ratelimit.mjs";
 
 const ISSUER = "icd10-licensing";
 const AUDIENCE = "icd10-codex-2010";
@@ -56,32 +59,66 @@ function timingSafeEq(a, b) {
   return crypto.timingSafeEqual(ha, hb);
 }
 
-// Rate limiter sliding window per IP (in-memory, cukup untuk node tunggal).
-class RateLimiter {
-  constructor(limit, windowMs = 60_000) {
-    this.limit = limit;
-    this.windowMs = windowMs;
-    this.hits = new Map();
+// ---------- rate limit (durable, SQLite) ----------
+
+let limiter = null;
+let rateDegradedLoggedAt = 0;
+
+function rateDeny(res, ip, bucket, retryAfterSec) {
+  audit(null, null, "rate_limited", ip, String(bucket).slice(0, 80));
+  res.writeHead(429, {
+    "retry-after": String(retryAfterSec),
+    "content-type": "application/json",
+  });
+  res.end(JSON.stringify({ error: "rate_limited" }));
+}
+
+// Fail-open bila penyimpanan rate limit error (lihat ratelimit.mjs) — tetapi
+// kegagalan selalu tercatat di audit, bukan diabaikan diam-diam.
+function checkBuckets(res, ip, buckets) {
+  const r = enforce(limiter, buckets);
+  if (r.degraded && Date.now() - rateDegradedLoggedAt > 60_000) {
+    rateDegradedLoggedAt = Date.now();
+    audit(null, null, "rate_store_error", ip, "fail-open");
+    console.warn("PERINGATAN: penyimpanan rate limit gagal — fail-open, tercatat di audit");
   }
-  allow(key) {
-    const now = Date.now();
-    const arr = (this.hits.get(key) ?? []).filter((t) => now - t < this.windowMs);
-    if (arr.length >= this.limit) {
-      this.hits.set(key, arr);
-      return false;
-    }
-    arr.push(now);
-    this.hits.set(key, arr);
-    if (this.hits.size > 10_000) this.hits.clear(); // guard memori
-    return true;
+  if (!r.ok) {
+    rateDeny(res, ip, r.deniedBucket, r.retryAfterSec);
+    return false;
+  }
+  return true;
+}
+
+// Subjek lease untuk bucketing. Payload TIDAK dipercaya untuk otorisasi —
+// hanya dipakai sebagai nama bucket; verifikasi tetap dilakukan handler.
+function leaseSubject(lease) {
+  if (typeof lease !== "string") return "none";
+  const p = lease.split(".")[1];
+  if (!p) return "none";
+  try {
+    const j = JSON.parse(Buffer.from(p, "base64url").toString("utf8"));
+    return typeof j.sub === "string" ? j.sub.slice(0, 36) : "none";
+  } catch {
+    return "none";
   }
 }
-const limiters = {
-  activate: new RateLimiter(config.rate.activate),
-  renew: new RateLimiter(config.rate.renew),
-  deactivate: new RateLimiter(config.rate.deactivate),
-  admin: new RateLimiter(config.rate.admin),
-};
+
+function extraBuckets(fam, body) {
+  const out = [];
+  if (fam === "activate") {
+    if (typeof body.licenseKey === "string") {
+      const h = crypto.createHash("sha256").update(body.licenseKey, "utf8").digest("hex").slice(0, 32);
+      out.push([`act:key:${h}`, config.rate.activateKey]);
+    }
+    if (typeof body.installationId === "string") {
+      out.push([`act:inst:${body.installationId}`, config.rate.activateInstallation]);
+    }
+  } else if (fam === "renew" || fam === "deactivate") {
+    const lim = fam === "renew" ? config.rate.renewLicense : config.rate.deactivateLicense;
+    out.push([`${fam}:lic:${leaseSubject(body.lease)}`, lim]);
+  }
+  return out;
+}
 
 async function readJsonBody(req) {
   const ct = req.headers["content-type"] ?? "";
@@ -290,20 +327,41 @@ function handleDeactivate(ip, body) {
 
 // ---------- admin ----------
 
-function adminAuthorized(req, ip) {
-  if (!config.adminToken) return false;
-  const h = req.headers["authorization"] ?? "";
-  const m = h.match(/^Bearer (.+)$/);
-  if (!m || !timingSafeEq(m[1], config.adminToken)) {
-    audit(null, null, "admin_denied", ip, "bad_token");
-    return false;
-  }
-  return true;
+function adminEnabled() {
+  return Boolean(config.adminToken || config.supportToken);
 }
 
-function handleAdmin(req, ip, body, url) {
+// Mengembalikan "admin" | "support" | null. Perbandingan timing-safe.
+function adminRole(req, ip) {
+  const h = req.headers["authorization"] ?? "";
+  const m = h.match(/^Bearer (.+)$/);
+  if (!m) {
+    audit(null, null, "admin_denied", ip, "no_token");
+    return null;
+  }
+  if (config.adminToken && timingSafeEq(m[1], config.adminToken)) return "admin";
+  if (config.supportToken && timingSafeEq(m[1], config.supportToken)) return "support";
+  audit(null, null, "admin_denied", ip, "bad_token");
+  return null;
+}
+
+// Peran support: hanya baca + lepas aktivasi (tidak boleh membuat/mengubah/
+// mencabut lisensi, tidak boleh mengubah kuota/entitlement).
+function supportMay(method, p) {
+  if (method === "GET" && (p === "/admin/licenses" || p === "/admin/audit")) return true;
+  if (method === "GET" && /^\/admin\/licenses\/[0-9a-f-]{36}\/activations$/.test(p)) return true;
+  if (method === "DELETE" && /^\/admin\/activations\/[0-9a-f-]{36}$/.test(p)) return true;
+  return false;
+}
+
+function handleAdmin(req, ip, body, url, role) {
   const p = url.pathname;
   const bad = { code: 400, res: { error: "bad_request" } };
+
+  if (role !== "admin" && !supportMay(req.method, p)) {
+    audit(null, null, "admin_denied", ip, `role=${role} ${req.method} ${p}`.slice(0, 120));
+    return { code: 403, res: { error: "forbidden_role" } };
+  }
 
   if (req.method === "POST" && p === "/admin/licenses") {
     const maxAct = body.maxActivations;
@@ -431,26 +489,36 @@ async function main() {
     process.exit(1);
   }
   db = openDb(config.dbPath);
+  limiter = createRateLimiter(db, { windowMs: config.rateWindowMs });
+
+  // Pengaman konfigurasi: jangan pernah membuka endpoint publik tanpa TLS.
+  // Produksi yang memakai reverse proxy tetap bind ke loopback.
+  const loopback = new Set(["127.0.0.1", "::1", "localhost"]);
+  if (!loopback.has(config.host) && !(config.tlsCert && config.tlsKey)) {
+    console.error(
+      "FATAL: LICENSE_HOST='" + config.host + "' bukan loopback tetapi TLS tidak dikonfigurasi. " +
+        "Set LICENSE_TLS_CERT + LICENSE_TLS_KEY, atau bind ke 127.0.0.1 di belakang reverse proxy."
+    );
+    process.exit(1);
+  }
 
   const handler = async (req, res) => {
     const ip = safeIp(req);
     const url = new URL(req.url, "http://x");
     try {
       if (req.method === "GET" && url.pathname === "/healthz") {
-        return sendJson(res, 200, { ok: true });
+        db.prepare("SELECT 1 AS ok").get();
+        return sendJson(res, 200, { ok: true, db: "ok" });
       }
       if (url.pathname.startsWith("/v1/")) {
         const fam = url.pathname.slice(4);
         if (!["activate", "renew", "deactivate"].includes(fam) || req.method !== "POST") {
           return sendJson(res, 404, { error: "not_found" });
         }
-        if (!limiters[fam].allow(ip)) {
-          audit(null, null, "rate_limited", ip, fam);
-          res.writeHead(429, { "retry-after": "60", "content-type": "application/json" });
-          return res.end(JSON.stringify({ error: "rate_limited" }));
-        }
+        if (!checkBuckets(res, ip, [[`${fam}:ip:${ip}`, config.rate[fam]]])) return;
         const { error, body } = await readJsonBody(req);
         if (error) return sendJson(res, 400, { error: "bad_request" });
+        if (!checkBuckets(res, ip, extraBuckets(fam, body))) return;
         const out =
           fam === "activate" ? handleActivate(ip, body)
           : fam === "renew" ? handleRenew(ip, body)
@@ -458,12 +526,18 @@ async function main() {
         return sendJson(res, out.code, out.res);
       }
       if (url.pathname.startsWith("/admin")) {
-        if (!limiters.admin.allow(ip)) return sendJson(res, 429, { error: "rate_limited" });
-        if (!adminAuthorized(req, ip)) return sendJson(res, config.adminToken ? 401 : 503, { error: config.adminToken ? "unauthorized" : "admin_disabled" });
+        if (!checkBuckets(res, ip, [[`admin:ip:${ip}`, config.rate.admin]])) return;
+        const role = adminRole(req, ip);
+        if (!role) {
+          return sendJson(res, adminEnabled() ? 401 : 503, {
+            error: adminEnabled() ? "unauthorized" : "admin_disabled",
+          });
+        }
+        if (!checkBuckets(res, ip, [[`admin:role:${role}`, config.rate.adminRole]])) return;
         const noBody = req.method === "GET" || req.method === "DELETE";
         const { error, body } = noBody ? { body: {} } : await readJsonBody(req);
         if (error) return sendJson(res, 400, { error: "bad_request" });
-        const out = handleAdmin(req, ip, body, url);
+        const out = handleAdmin(req, ip, body, url, role);
         return sendJson(res, out.code, out.res);
       }
       return sendJson(res, 404, { error: "not_found" });
@@ -488,7 +562,8 @@ async function main() {
     console.log(
       `license-server: ${config.tlsCert ? "https" : "http"}://${config.host}:${config.port} ` +
       `kid=[${Object.keys(signingKeys).join(",")}] db=${config.dbPath} ` +
-      `admin=${config.adminToken ? "on" : "off"} lease=${config.leaseDays}d`
+      `admin=${config.adminToken ? "on" : "off"} support=${config.supportToken ? "on" : "off"} ` +
+      `lease=${config.leaseDays}d`
     );
   });
 }

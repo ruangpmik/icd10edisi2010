@@ -1,0 +1,67 @@
+{
+  "product": "ICD-10 Codex 2010",
+  "appId": "id.ruangpmik.icd10codex",
+  "version": "0.3.0",
+  "source": {
+    "gitCommit": "d345e6c1333424b3917e96a5c23d137aca62d5c2",
+    "gitBranch": "feat/f3-licensing",
+    "workingTreeDirty": true
+  },
+  "build": {
+    "builtAt": "2026-10-28T06:40:18.267Z",
+    "electronVersion": "45.0.0",
+    "nodeVersion": "v24.22.1",
+    "platform": "win32-x64"
+  },
+  "artifacts": {
+    "installer": {
+      "file": "ICD10-Codex-Setup-0.3.0.exe",
+      "bytes": 185808675,
+      "sha256": "d392b21f30725b67d8ad3dbdd04739c7c668a243b731ecbdb48f89761d203078"
+    },
+    "blockmap": {
+      "file": "ICD10-Codex-Setup-0.3.0.exe.blockmap",
+      "bytes": 195682,
+      "sha256": "33176bc3a83a1a96f0826cace0da9940a4dbf3e31ec3d0490a525f4878b826bf"
+    },
+    "exe": {
+      "file": "win-unpacked/ICD-10 Codex 2010.exe",
+      "bytes": 249852928,
+      "sha256": "90bd58c395293943dbfdf330b282c214482e75c234565801a283e33799c7d272"
+    },
+    "asar": {
+      "file": "win-unpacked/resources/app.asar",
+      "bytes": 198999902,
+      "sha256": "a10ac2f54f384028aacfc190aa89f78e80c90b71233f3d017d773ebc08e9cf5d"
+    }
+  },
+  "trust": {
+    "embeddedKids": [
+      "prod-candidate-2026-10"
+    ],
+    "productionKeysetKids": [
+      "prod-candidate-2026-10"
+    ],
+    "productionKeyFingerprintSpkiSha256": [
+      {
+        "kid": "prod-candidate-2026-10",
+        "fingerprint": "8eb4f398dae0c24e8f4fe4d2348686bec3584d3238ee9fd31ef0e267dbde9a23"
+      }
+    ]
+  },
+  "fuses": {
+    "RunAsNode": "DISABLE",
+    "EnableCookieEncryption": "DISABLE",
+    "EnableNodeOptionsEnvironmentVariable": "DISABLE",
+    "EnableNodeCliInspectArguments": "DISABLE",
+    "EnableEmbeddedAsarIntegrityValidation": "ENABLE",
+    "OnlyLoadAppFromAsar": "ENABLE",
+    "LoadBrowserProcessSpecificV8Snapshot": "DISABLE",
+    "GrantFileProtocolExtraPrivileges": "ENABLE",
+    "WasmTrapHandlers": "ENABLE"
+  },
+  "signing": {
+    "codeSigned": false,
+    "status": "UNSIGNED — tidak ada sertifikat code signing; hanya untuk pengujian/beta terbatas"
+  }
+}
