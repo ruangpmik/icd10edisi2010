@@ -79,6 +79,7 @@ export interface UiStrings {
   mtLoading: string;
   mtNote: string;
   mtFail: string;
+  mtDesktop: string;
   mtViewOrig: string;
   mtViewTr: string;
   noteGo: string;
@@ -242,6 +243,7 @@ const ID: UiStrings = {
   mtLoading: "Menerjemahkan…",
   mtNote: "Terjemahan mesin — verifikasi sebelum dipakai koding.",
   mtFail: "Terjemahan gagal, coba lagi.",
+  mtDesktop: "Terjemahan mesin dinonaktifkan di aplikasi desktop (privasi data).",
   mtViewOrig: "Original",
   mtViewTr: "Terjemahan",
   noteGo: "Lompat ke catatan bab",
@@ -419,6 +421,7 @@ const EN: UiStrings = {
   mtLoading: "Translating…",
   mtNote: "Machine translation — verify before coding use.",
   mtFail: "Translation failed, retry.",
+  mtDesktop: "Machine translation is disabled in the desktop app (privacy).",
   mtViewOrig: "Original",
   mtViewTr: "Translated",
   noteGo: "Jump to chapter note",

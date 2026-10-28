@@ -1058,6 +1058,12 @@ export default function Page() {
 
   const doTranslate = async () => {
     if (!node || mtBusy || mt[sel]) return;
+    // Terjemahan mesin memakai endpoint pihak ketiga (Google). Dinonaktifkan
+    // di build desktop agar teks diagnosis tidak keluar dari perangkat.
+    if (/Electron\//.test(navigator.userAgent)) {
+      setMtErr(t.mtDesktop);
+      return;
+    }
     setMtErr(null);
     setMtBusy(true);
     try {

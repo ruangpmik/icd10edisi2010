@@ -27,6 +27,29 @@ Build juga menjalankan `scripts/obfuscate.mjs`, yang mengaburkan chunk aplikasi 
 
 Berkas JSON di `public/data/` dibangun oleh skrip di `scripts/` dari PDF sumber di `data/raw/`.
 
+## Aplikasi desktop Windows
+
+Build installer NSIS (butuh build `out/`):
+
+```
+npm run dist:desktop
+```
+
+Artefak: `dist/ICD10-Browser-Setup-<versi>.exe` + `dist/win-unpacked/`.
+Sajikan `out/` lewat protokol `app://` (bukan `file://`), renderer sandbox
+tanpa Node, DevTools mati di rilis, CSP ketat, Fuses Electron aktif.
+Terjemahan mesin (Google) dinonaktifkan di versi desktop.
+
+Uji cepat aplikasi terpack (tanpa installer):
+
+```
+set ICD10_SMOKE=1
+dist\win-unpacked\ICD-10 2010 Browser.exe
+```
+
+Mode smoke membuka tanpa jendela, memverifikasi data + konsol, menulis
+screenshot, lalu keluar dengan kode 0/1.
+
 ## Kredit
 
 Kang Aris | @riz_es — RUANGPMIK
