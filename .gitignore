@@ -6,3 +6,7 @@ dist/
 tsconfig.tsbuildinfo
 .env*
 .DS_Store
+
+# Licensing server — secret & data lokal (JANGAN commit)
+license-server/keys/
+license-server/data/

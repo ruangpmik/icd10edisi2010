@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { LicenseGate } from "./LicenseGate";
 
 export const metadata: Metadata = {
   title: "ICD-10 2010 Browser (EN+ID) — RUANGPMIK",
@@ -16,6 +17,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>
+        {/* Gerbang lisensi — aktif hanya di desktop (window.icd10License). */}
+        <LicenseGate />
         {/* Watermark atribusi; tidak menangkap klik (pointer-events: none). */}
         <div className="wm" aria-hidden="true" />
       </body>

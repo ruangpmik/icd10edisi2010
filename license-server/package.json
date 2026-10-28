@@ -1,0 +1,15 @@
+{
+  "name": "icd10-license-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Licensing server ICD-10 Codex 2010 — lease Ed25519 (JWS EdDSA), aktivasi perangkat, pencabutan, audit.",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "keys": "node scripts/generate-keys.mjs",
+    "start": "node server.mjs",
+    "test": "node test/run-tests.mjs"
+  }
+}

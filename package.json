@@ -1,6 +1,6 @@
 {
   "name": "icd10-browser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "ICD-10 2010 Version Browser (EN + Indonesia) — sejenis eComPress Viewer / Wd2Cn.",
   "main": "electron/main.js",
@@ -49,6 +49,7 @@
     "files": [
       "electron/**/*",
       "out/**/*",
+      "shared/**/*",
       "package.json"
     ],
     "asar": true,

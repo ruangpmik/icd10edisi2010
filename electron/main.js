@@ -2,10 +2,12 @@
 // Menyajikan hasil `next build` (folder out/) lewat protokol app://,
 // bukan file:// — karena fetch() JSON gagal di file:// dan port lokal
 // membuka celah bagi proses lain untuk menyadap.
-const { app, BrowserWindow, Menu, shell, session, protocol } = require("electron");
+const { app, BrowserWindow, Menu, shell, session, protocol, ipcMain } = require("electron");
 const fs = require("node:fs/promises");
 const fss = require("node:fs");
 const path = require("node:path");
+const license = require("./license.js");
+const { allowLicenseIpc } = require("./ipc-guard.js");
 
 const isSmoke = process.env.ICD10_SMOKE === "1";
 const OUT = path.join(__dirname, "..", "out");
@@ -123,8 +125,21 @@ if (!gotLock) {
   });
 }
 
+let win = null;
+
+// IPC lisensi — penjaga sender: hanya frame top-level dari app://local.
+function licGuard(e) {
+  return allowLicenseIpc(e);
+}
+ipcMain.handle("license:status", async (e) => (licGuard(e) ? license.getStatus() : { error: "forbidden" }));
+ipcMain.handle("license:activate", async (e, key) =>
+  licGuard(e) ? license.activate(key) : { ok: false, error: "forbidden" }
+);
+ipcMain.handle("license:renew", async (e) => (licGuard(e) ? license.renew() : { ok: false, error: "forbidden" }));
+ipcMain.handle("license:deactivate", async (e) => (licGuard(e) ? license.deactivate() : { ok: false, error: "forbidden" }));
+
 function createWindow() {
-  const win = new BrowserWindow({
+  const w = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 960,
@@ -137,8 +152,10 @@ function createWindow() {
       nodeIntegration: false,
       spellcheck: false,
       devTools: !app.isPackaged,
+      preload: path.join(__dirname, "preload-license.js"),
     },
   });
+  win = w;
 
   win.once("ready-to-show", () => {
     if (!isSmoke) win.show();
@@ -179,6 +196,10 @@ function createWindow() {
 
   win.loadURL("app://local/");
   win.on("closed", () => win.destroy());
+
+  // Siklus lisensi: status awal ke renderer + renew otomatis tiap 15 menit.
+  license.broadcast(() => win);
+  license.startAutoRenew(() => win);
 }
 
 app.on("window-all-closed", () => app.quit());
@@ -214,13 +235,44 @@ function runSmoke(wc) {
             noWindowAllowed: ok === null,
             noWindowDenied: bad === null,
             nodeExposed: typeof require !== "undefined" || typeof process !== "undefined",
+            licenseApi: typeof window.icd10License === "object" && window.icd10License !== null,
           };
         })()`,
         true
       );
+      // Lisensi: dengan ICD10_LIC_KEY + ICD10_LICENSE_URL → aktivasi harus sukses,
+      // lease harus lolos verifikasi, dan tamper 1 karakter harus ditolak.
+      let licInfo = { state: "unactivated-no-env" };
+      const key = process.env.ICD10_LIC_KEY;
+      if (key && license.serverUrl()) {
+        const act = await license.activate(key);
+        const st = await license.getStatus();
+        const self = await license.selfTest();
+        licInfo = {
+          state: st.state,
+          activateOk: act.ok === true,
+          activateError: act.error ?? null,
+          canUseApp: st.canUseApp === true,
+          ...self,
+        };
+      } else {
+        const st = await license.getStatus();
+        licInfo = { state: st.state };
+      }
       const shot = process.env.ICD10_SMOKE_SHOT ?? path.join(app.getPath("temp"), "icd10-smoke.png");
       fss.writeFileSync(shot, (await wc.capturePage()).toPNG());
-      console.log("SMOKE", JSON.stringify({ ...r, errors, shot }));
+      console.log("SMOKE", JSON.stringify({ ...r, license: licInfo, errors, shot }));
+      // Ekspektasi eksplisit (matriks uji negatif) menang atas kriteria default,
+      // supaya run negatif dinilai lulus bila perilakunya memang sesuai.
+      const expectState = process.env.ICD10_SMOKE_EXPECT_STATE;
+      const expectError = process.env.ICD10_SMOKE_EXPECT_ERROR;
+      const licOk = expectState
+        ? licInfo.state === expectState &&
+          (!expectError || licInfo.activateError === expectError)
+        : key && license.serverUrl()
+          ? licInfo.activateOk === true && licInfo.state === "active" &&
+            licInfo.canUseApp === true && licInfo.selfTest === "ok"
+          : ["unactivated-no-env", "unactivated", "grace", "active"].includes(licInfo.state);
       process.exit(
         r.idTerms >= 437 &&
           r.chapters >= 22 &&
@@ -228,6 +280,8 @@ function runSmoke(wc) {
           r.noWindowAllowed &&
           r.noWindowDenied &&
           !r.nodeExposed &&
+          r.licenseApi === true &&
+          licOk &&
           errors.length === 0
           ? 0
           : 1
