@@ -24,6 +24,8 @@ Aplikasi existing dipertahankan: 437 istilah Indonesia, 22 bab, 11.373 node, 44 
 
 Sumber: `docs/release/F4-build-metadata.json` (dibuat oleh `scripts/release-metadata.mjs`).
 
+Commit F4 (kode, tes, laporan): `e78d36f`. Metadata build tetap mencatat `d345e6c` + working tree dirty karena build dijalankan **sebelum** commit F4; input asar (keyset, konfigurasi) sama dengan yang di-commit.
+
 | Item | Nilai |
 |---|---|
 | Installer | `dist/ICD10-Codex-Setup-0.3.0.exe` — 185.808.675 byte |
