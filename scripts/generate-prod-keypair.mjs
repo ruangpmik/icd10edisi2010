@@ -70,6 +70,11 @@ const fingerprint = crypto.createHash("sha256").update(der).digest("hex");
 
 if (flags["public-out"]) {
   const target = path.resolve(flags["public-out"]);
+  // Jangan pernah menulis key kandidat/testing ke keyset production final.
+  if (/production\.public-keys\.json$/i.test(target) && /candidate|^test/i.test(kid)) {
+    console.error("GAGAL: keyset production tidak boleh diisi kid test/candidate:", kid);
+    process.exit(1);
+  }
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, JSON.stringify([{ kid, pem: pubPem }], null, 2) + "\n");
   console.log("public key (aman, bukan secret) ditulis ke:", target);

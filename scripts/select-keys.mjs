@@ -1,12 +1,21 @@
 // Memilih keyset trust signing untuk build desktop.
 //
-//   node scripts/select-keys.mjs test|production
+//   node scripts/select-keys.mjs test|candidate|production
 //
 // Menyalin electron/keysets/<set>.public-keys.json -> electron/public-keys.json
-// (file hasil generate, tidak di-commit). Build hanya membawa SATU keyset:
-// build produksi tidak boleh memuat kid testing. Skrip menolak keyset yang
-// tumpang tindih kid, PEM yang bukan public key, atau PEM yang dapat diparse
-// sebagai private key.
+// (file hasil generate, tidak di-commit). Build hanya membawa SATU keyset.
+//
+// Tiga tingkat trust yang terpisah:
+//   test       — hanya untuk build pengujian (nama kid berawalan "test").
+//   candidate  — kandidat produksi (kid mengandung "candidate"), belum tentu
+//                menjadi key produksi final.
+//   production — key produksi final. Keyset ini KOSONG sampai diisi lewat
+//                provisioning di server tepercaya; build produksi gagal bila
+//                belum diprovisikan (status BLOCKED, bukan diam-diam memakai
+//                key kandidat).
+//
+// Skrip menolak keyset yang tumpang tindih kid/material, PEM yang bukan public
+// key, dan PEM yang dapat diparse sebagai private key.
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -15,6 +24,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SETS = {
   test: "test.public-keys.json",
+  candidate: "candidate.public-keys.json",
   production: "production.public-keys.json",
 };
 
@@ -24,79 +34,90 @@ if (!SETS[arg]) {
   process.exit(1);
 }
 
-const readSet = (name) => {
+const fail = (msg) => {
+  console.error("GAGAL: " + msg);
+  process.exit(1);
+};
+
+const readSet = (name, { allowEmpty = false } = {}) => {
   const p = path.join(ROOT, "electron", "keysets", SETS[name]);
-  if (!fs.existsSync(p)) {
-    console.error(`GAGAL: keyset ${name} tidak ada: ${p}`);
-    process.exit(1);
-  }
+  if (!fs.existsSync(p)) fail(`keyset ${name} tidak ada: ${p}`);
   let arr;
   try {
     arr = JSON.parse(fs.readFileSync(p, "utf8"));
   } catch (e) {
-    console.error(`GAGAL: keyset ${name} bukan JSON valid: ${e.message}`);
-    process.exit(1);
+    fail(`keyset ${name} bukan JSON valid: ${e.message}`);
   }
-  if (!Array.isArray(arr) || arr.length === 0) {
-    console.error(`GAGAL: keyset ${name} harus array tidak kosong`);
-    process.exit(1);
+  if (!Array.isArray(arr)) fail(`keyset ${name} harus array`);
+  if (arr.length === 0 && !allowEmpty) {
+    if (name === "production") {
+      fail(
+        "keyset production kosong — key produksi final belum diprovisikan (BLOCKED). " +
+          "Build produksi tidak boleh memakai key test/candidate; gunakan " +
+          "`npm run build:desktop:candidate` untuk build kandidat, atau " +
+          "provisikan key dulu (lihat docs/F5-key-lifecycle.md)."
+      );
+    }
+    fail(`keyset ${name} harus array tidak kosong`);
   }
   for (const k of arr) {
     if (!k || typeof k.kid !== "string" || !/^[A-Za-z0-9._-]{1,64}$/.test(k.kid)) {
-      console.error(`GAGAL: keyset ${name} berisi kid tidak valid`);
-      process.exit(1);
+      fail(`keyset ${name} berisi kid tidak valid`);
     }
     if (typeof k.pem !== "string" || !k.pem.includes("BEGIN PUBLIC KEY")) {
-      console.error(`GAGAL: ${name}/${k.kid} bukan PUBLIC KEY PEM`);
-      process.exit(1);
+      fail(`${name}/${k.kid} bukan PUBLIC KEY PEM`);
     }
     if (/PRIVATE KEY/.test(k.pem)) {
-      console.error(`GAGAL: ${name}/${k.kid} berisi material private key — tolak`);
-      process.exit(1);
+      fail(`${name}/${k.kid} berisi material private key — tolak`);
     }
     let key;
     try {
       key = crypto.createPublicKey(k.pem);
     } catch (e) {
-      console.error(`GAGAL: ${name}/${k.kid} PEM tidak dapat diparse: ${e.message}`);
-      process.exit(1);
+      fail(`${name}/${k.kid} PEM tidak dapat diparse: ${e.message}`);
     }
     if (key.asymmetricKeyType !== "ed25519") {
-      console.error(`GAGAL: ${name}/${k.kid} bukan Ed25519 (${key.asymmetricKeyType})`);
-      process.exit(1);
+      fail(`${name}/${k.kid} bukan Ed25519 (${key.asymmetricKeyType})`);
     }
   }
   const kids = arr.map((k) => k.kid);
-  if (new Set(kids).size !== kids.length) {
-    console.error(`GAGAL: keyset ${name} berisi kid duplikat`);
-    process.exit(1);
-  }
+  if (new Set(kids).size !== kids.length) fail(`keyset ${name} berisi kid duplikat`);
   return arr;
 };
 
 const chosen = readSet(arg);
 
-// Kepercayaan testing dan produksi harus terpisah: kid tidak boleh muncul di
-// dua keyset, dan public key (material) juga tidak boleh sama.
-const otherName = arg === "production" ? "test" : "production";
-let other = [];
-try {
-  other = readSet(otherName);
-} catch {
-  // Keyset lain belum ada (mis. saat awal provisioning) — bukan error.
-  other = [];
+// Key produksi final tidak boleh berupa key test atau kandidat yang sekadar
+// diganti namanya. Penanda kid hanya pengaman tambahan; material tetap berbeda.
+if (arg === "production") {
+  const suspect = chosen.filter((k) => /candidate|^test/i.test(k.kid));
+  if (suspect.length) {
+    fail(
+      `keyset production memuat kid test/candidate (${suspect.map((k) => k.kid).join(", ")}). ` +
+        "Provision key produksi baru; jangan memakai key kandidat sebagai produksi."
+    );
+  }
 }
+
+// Kepercayaan tiap tingkat harus terpisah: kid dan material public key tidak
+// boleh muncul di dua keyset. Keyset lain boleh kosong (belum diprovisikan).
+const others = Object.keys(SETS).filter((n) => n !== arg);
 const chosenKids = new Set(chosen.map((k) => k.kid));
-const clash = other.filter((k) => chosenKids.has(k.kid));
-if (clash.length) {
-  console.error(`GAGAL: kid tumpang tindih antara keyset ${arg} dan ${otherName}: ${clash.map((k) => k.kid).join(", ")}`);
-  process.exit(1);
-}
-const chosenPems = new Set(chosen.map((k) => crypto.createPublicKey(k.pem).export({ type: "spki", format: "der" }).toString("base64")));
-const clashPem = other.filter((k) => chosenPems.has(crypto.createPublicKey(k.pem).export({ type: "spki", format: "der" }).toString("base64")));
-if (clashPem.length) {
-  console.error(`GAGAL: public key identik dipakai di dua keyset (${clashPem.map((k) => k.kid).join(", ")})`);
-  process.exit(1);
+const chosenDer = new Set(
+  chosen.map((k) => crypto.createPublicKey(k.pem).export({ type: "spki", format: "der" }).toString("base64"))
+);
+for (const otherName of others) {
+  const other = readSet(otherName, { allowEmpty: true });
+  const clash = other.filter((k) => chosenKids.has(k.kid));
+  if (clash.length) {
+    fail(`kid tumpang tindih antara keyset ${arg} dan ${otherName}: ${clash.map((k) => k.kid).join(", ")}`);
+  }
+  const clashPem = other.filter((k) =>
+    chosenDer.has(crypto.createPublicKey(k.pem).export({ type: "spki", format: "der" }).toString("base64"))
+  );
+  if (clashPem.length) {
+    fail(`public key identik dipakai di dua keyset (${clashPem.map((k) => k.kid).join(", ")})`);
+  }
 }
 
 const outPath = path.join(ROOT, "electron", "public-keys.json");

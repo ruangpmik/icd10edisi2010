@@ -21,9 +21,9 @@ for (let i = 0; i < argv.length; i++) {
   if (argv[i].startsWith("--")) flags[argv[i].slice(2)] = argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[++i] : "true";
 }
 const OUT = path.resolve(ROOT, flags.out ?? "dist");
-const EXPECT = (flags["expect-keyset"] ?? "production").toLowerCase();
-if (!["test", "production"].includes(EXPECT)) {
-  console.error("GAGAL: --expect-keyset harus test|production");
+const EXPECT = (flags["expect-keyset"] ?? "candidate").toLowerCase();
+if (!["test", "candidate", "production"].includes(EXPECT)) {
+  console.error("GAGAL: --expect-keyset harus test|candidate|production");
   process.exit(2);
 }
 
@@ -65,30 +65,41 @@ check("tidak ada kode server lisensi di asar", serverEntries.length === 0, `${se
 // --- keyset yang benar-benar tertanam ---
 const embedded = JSON.parse(asar.extractFile(ASAR, "electron/public-keys.json").toString("utf8"));
 const expectedSet = JSON.parse(fs.readFileSync(path.join(ROOT, "electron", "keysets", `${EXPECT}.public-keys.json`), "utf8"));
+if (EXPECT === "production" && (!Array.isArray(expectedSet) || expectedSet.length === 0)) {
+  console.error("GAGAL: keyset production kosong — build produksi belum diizinkan (BLOCKED). Verifikasi hanya untuk test/candidate.");
+  process.exit(1);
+}
 const embeddedKids = embedded.map((k) => k.kid).sort();
 const expectedKids = expectedSet.map((k) => k.kid).sort();
 check(`keyset tertanam = ${EXPECT}`, JSON.stringify(embeddedKids) === JSON.stringify(expectedKids),
   `tertanam=[${embeddedKids}] harap=[${expectedKids}]`);
 
-const otherSetName = EXPECT === "production" ? "test" : "production";
-const otherSet = JSON.parse(fs.readFileSync(path.join(ROOT, "electron", "keysets", `${otherSetName}.public-keys.json`), "utf8"));
-const otherKids = otherSet.map((k) => k.kid);
+// Semua keyset lain tidak boleh tertanam (kid maupun material).
+const otherSets = ["test", "candidate", "production"].filter((n) => n !== EXPECT)
+  .map((n) => JSON.parse(fs.readFileSync(path.join(ROOT, "electron", "keysets", `${n}.public-keys.json`), "utf8")))
+  .flat();
+const otherKids = otherSets.map((k) => k.kid);
 
 const asarStr = fs.readFileSync(ASAR).toString("latin1");
 const exePath = path.join(OUT, "win-unpacked", "ICD-10 Codex 2010.exe");
 const exeStr = fs.existsSync(exePath) ? fs.readFileSync(exePath).toString("latin1") : "";
 
 for (const kid of otherKids) {
-  check(`asar/exe tidak memuat kid keyset ${otherSetName} '${kid}'`, !asarStr.includes(kid) && !exeStr.includes(kid));
+  check(`asar/exe tidak memuat kid keyset lain '${kid}'`, !asarStr.includes(kid) && !exeStr.includes(kid));
 }
 
-// Production build tidak boleh mempercayai kunci testing (baik kid maupun material).
-if (EXPECT === "production") {
-  check("produksi tidak memuat kid test-2026-10", !asarStr.includes("test-2026-10") && !exeStr.includes("test-2026-10"));
-  for (const t of otherSet) {
+// Build non-test tidak boleh mempercayai kunci testing (kid maupun material).
+// Build produksi juga tidak boleh mempercayai key kandidat.
+if (EXPECT !== "test") {
+  check("build non-test tidak memuat kid test-2026-10", !asarStr.includes("test-2026-10") && !exeStr.includes("test-2026-10"));
+  const testSet = JSON.parse(fs.readFileSync(path.join(ROOT, "electron", "keysets", "test.public-keys.json"), "utf8"));
+  for (const t of testSet) {
     const b64 = t.pem.split(/\r?\n/).filter((l) => l && !l.startsWith("-----")).join("");
-    check(`produksi tidak memuat material public key testing (${t.kid})`, !asarStr.includes(b64) && !exeStr.includes(b64));
+    check(`build non-test tidak memuat material public key testing (${t.kid})`, !asarStr.includes(b64) && !exeStr.includes(b64));
   }
+}
+if (EXPECT === "production") {
+  check("produksi tidak memuat kid kandidat", !embeddedKids.some((k) => /candidate/i.test(k)), embeddedKids.join(","));
 }
 
 // --- private key / secret ---
@@ -121,11 +132,11 @@ check("license key uji tidak tertanam di build", !asarStr.includes(testLicenseKe
 
 // --- konfigurasi serverUrl build produksi ---
 const cfg = JSON.parse(asar.extractFile(ASAR, "electron/license-config.json").toString("utf8"));
-if (EXPECT === "production") {
+if (EXPECT !== "test") {
   const u = String(cfg.serverUrl ?? "");
   const loopback = /^https?:\/\/(127\.|localhost|\[::1\])/.test(u);
-  check("produksi: serverUrl bukan loopback", !loopback, `serverUrl='${u}'`);
-  check("produksi: serverUrl memakai https atau kosong (gate unactivated)", u === "" || u.startsWith("https://"), `serverUrl='${u}'`);
+  check(`${EXPECT}: serverUrl bukan loopback`, !loopback, `serverUrl='${u}'`);
+  check(`${EXPECT}: serverUrl memakai https atau kosong (gate unactivated)`, u === "" || u.startsWith("https://"), `serverUrl='${u}'`);
 } else {
   check("test: serverUrl boleh kosong/loopback", true, `serverUrl='${cfg.serverUrl}'`);
 }

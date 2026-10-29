@@ -42,19 +42,23 @@ const ok = (name, cond, extra = "") => {
 
 const loadKeyset = (name) => JSON.parse(fs.readFileSync(path.join(ROOT, "electron", "keysets", `${name}.public-keys.json`), "utf8"));
 const testSet = loadKeyset("test");
+const candSet = loadKeyset("candidate");
 const prodSet = loadKeyset("production");
 const verify = (lease, allowedKeys) => verifyJws(lease, { allowedKeys });
 
 // ---------- keyset nyata: harus terpisah ----------
 const testKids = new Set(testSet.map((k) => k.kid));
+const candKids = new Set(candSet.map((k) => k.kid));
 const prodKids = new Set(prodSet.map((k) => k.kid));
-ok("keyset: kid testing dan produksi tidak tumpang tindih", [...testKids].every((k) => !prodKids.has(k)),
-  `test=[${[...testKids]}] prod=[${[...prodKids]}]`);
-ok("keyset: build produksi tidak mempercayai test-2026-10", !prodKids.has("test-2026-10"), [...prodKids].join(","));
+ok("keyset: kid testing dan kandidat tidak tumpang tindih", [...testKids].every((k) => !candKids.has(k)),
+  `test=[${[...testKids]}] candidate=[${[...candKids]}]`);
+ok("keyset: production kosong = key produksi final belum diprovisikan (build produksi BLOCKED)",
+  prodSet.length === 0, `${prodSet.length} kid`);
+ok("keyset: build kandidat tidak mempercayai test-2026-10", !candKids.has("test-2026-10"), [...candKids].join(","));
 
 const keyMat = (k) => crypto.createPublicKey(k.pem).export({ type: "spki", format: "der" }).toString("base64");
-ok("keyset: material public key testing != produksi",
-  !testSet.some((t) => prodSet.some((p) => keyMat(t) === keyMat(p))));
+ok("keyset: material public key testing != kandidat",
+  !testSet.some((t) => candSet.some((p) => keyMat(t) === keyMat(p))));
 
 // ---------- signing dengan keyset nyata (private key di luar repo) ----------
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "trust-selftest-"));
@@ -94,19 +98,40 @@ if (!testSigner) {
 const testLease = signLease(claims(), { kid: testSigner.kid, keys: testSigner.keys });
 ok("klaim: lease bertanda tangan kid test-2026-10 sah terhadap keyset testing",
   verify(testLease, testSet).ok === true, verify(testLease, testSet).reason ?? "");
-ok("klaim: lease bertanda tangan kid test-2026-10 DITOLAK keyset produksi",
+ok("klaim: lease bertanda tangan kid test-2026-10 DITOLAK keyset kandidat",
+  verify(testLease, candSet).ok === false, verify(testLease, candSet).reason ?? "");
+ok("klaim: lease bertanda tangan kid test-2026-10 DITOLAK keyset produksi (kosong)",
   verify(testLease, prodSet).ok === false, verify(testLease, prodSet).reason ?? "");
 
+// Lease sah dari key kandidat (bila private key kandidat tersedia di mesin ini).
+const candKeysDir = path.join(os.homedir(), ".icd10-prod-keys");
+let candSigner = null;
+try {
+  const loaded = loadSigningKeys(candKeysDir);
+  if (loaded["prod-candidate-2026-10"] && candKids.has("prod-candidate-2026-10")) {
+    candSigner = { keys: loaded, kid: "prod-candidate-2026-10" };
+  }
+} catch {}
+if (candSigner) {
+  const candLease = signLease(claims(), candSigner);
+  ok("klaim: lease kandidat sah terhadap keyset kandidat",
+    verify(candLease, candSet).ok === true, verify(candLease, candSet).reason ?? "");
+  ok("klaim: lease kandidat DITOLAK keyset testing",
+    verify(candLease, testSet).ok === false, verify(candLease, testSet).reason ?? "");
+} else {
+  console.log("INFO: private key kandidat tidak tersedia — uji positif kandidat dilewati (NOT TESTED lokal)");
+}
+
 const ephLease = signLease(claims(), { kid: ephemeral.kid, keys: kA });
-ok("klaim: lease bertanda tangan kid produksi-kandidat DITOLAK keyset testing",
+ok("klaim: lease bertanda tangan kid tidak terdaftar DITOLAK keyset testing",
   verify(ephLease, testSet).ok === false, verify(ephLease, testSet).reason ?? "");
-ok("klaim: lease bertanda tangan kid produksi-kandidat sah terhadap keyset produksi bila kid terdaftar",
-  verify(ephLease, [...prodSet, ephemeral.pub]).ok === true);
+ok("klaim: lease kid tidak terdaftar sah bila public key-nya ditambahkan ke trust store (rotasi)",
+  verify(ephLease, [...candSet, ephemeral.pub]).ok === true);
 
 // ---------- kid tidak dikenal ----------
 const unknownLease = signLease(claims(), { kid: ephemeral.kid, keys: kA });
 ok("kid tidak dikenal ditolak (bukan diterima lalu divalidasi)",
-  verify(unknownLease, prodSet).reason === "unknown_kid", verify(unknownLease, prodSet).reason ?? "");
+  verify(unknownLease, candSet).reason === "unknown_kid", verify(unknownLease, candSet).reason ?? "");
 
 // ---------- rotasi: dua kid dipercaya, lalu kid lama dicabut ----------
 const kOld = makeKey("rotate-old");

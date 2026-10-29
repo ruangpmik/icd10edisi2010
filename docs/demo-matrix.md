@@ -82,3 +82,11 @@ Kontrol yang berlaku:
 Jika kelak ada fitur berbayar (mis. sinkron cloud), kontrol harus berupa
 pemeriksaan entitlement di backend — bukan menyembunyikan UI — dan keputusan
 ini harus ditinjau ulang.
+
+## Keputusan F5 (2026-10-29)
+
+Keputusan F4 dipertahankan tanpa perubahan: web tetap publik tanpa gating
+lisensi; tidak ada fitur proprietary baru di web; tidak ada endpoint server
+yang diekspos ke web (web tetap file statis `out/`). Tidak ada pekerjaan
+implementasi baru yang diperlukan pada web di F5 — keputusan desain, bukan
+hasil pengujian baru.

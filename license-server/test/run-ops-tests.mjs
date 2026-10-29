@@ -525,10 +525,66 @@ async function testTlsAndBind() {
     guard.code === 1 && guard.out.includes("FATAL"), `exit=${guard.code}`);
 }
 
+async function testDbFailures() {
+  const spawnExit = (dbPath) =>
+    new Promise((resolve) => {
+      const proc = spawn(process.execPath, ["server.mjs"], {
+        cwd: ROOT,
+        env: {
+          ...process.env,
+          LICENSE_HOST: "127.0.0.1",
+          LICENSE_PORT: String(nextPort++),
+          LICENSE_SIGNING_KID: KID,
+          LICENSE_KEYS_DIR: keysDir,
+          LICENSE_DB: dbPath,
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      let out = "";
+      proc.stdout.on("data", (d) => (out += d));
+      proc.stderr.on("data", (d) => (out += d));
+      proc.on("exit", (code) => resolve({ code, out }));
+      setTimeout(() => { proc.kill(); resolve({ code: -1, out: out + " (timeout)" }); }, 5000);
+    });
+
+  // DB korup: file berisi sampah, bukan SQLite.
+  const corruptDir = path.join(tmp, "corrupt");
+  fs.mkdirSync(corruptDir, { recursive: true });
+  const corrupt = path.join(corruptDir, "license.db");
+  fs.writeFileSync(corrupt, crypto.randomBytes(8192));
+  const r1 = await spawnExit(corrupt);
+  ok("DB korup: server menolak start (exit 1 + FATAL)", r1.code === 1 && r1.out.includes("FATAL"), `exit=${r1.code}`);
+  ok("DB korup: tidak mencetak stack internal ke output",
+    !/\n\s+at\s/.test(r1.out) && !r1.out.includes("node:internal"), r1.out.split(/\r?\n/)[0]);
+
+  // Path DB tidak dapat dipakai (direktori, bukan file).
+  const dirAsDb = path.join(tmp, "dir-as-db");
+  fs.mkdirSync(dirAsDb, { recursive: true });
+  const r2 = await spawnExit(dirAsDb);
+  ok("DB tidak tersedia: server menolak start (exit 1 + FATAL)", r2.code === 1 && r2.out.includes("FATAL"), `exit=${r2.code}`);
+
+  // Error response tidak membocorkan detail internal.
+  const s = await startServer({ dbPath: path.join(tmp, "leak", "license.db") });
+  const malformed = await fetch(s.base + "/v1/activate", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: "{rusak",
+  });
+  const text = await malformed.text();
+  ok("request JSON rusak: 400 generik tanpa detail internal",
+    malformed.status === 400 && text === JSON.stringify({ error: "bad_request" }), text);
+  const unknown = await fetch(s.base + "/v1/tidak-ada", { method: "POST" });
+  const unknownText = await unknown.text();
+  ok("route tidak dikenal: 404 generik tanpa detail internal",
+    unknown.status === 404 && unknownText === JSON.stringify({ error: "not_found" }), unknownText);
+  await s.stop();
+}
+
 try {
   await testRateLimit();
   await testAdminRoles();
   await testTlsAndBind();
+  await testDbFailures();
 } catch (e) {
   fail++;
   console.log("FAIL harness — " + (e?.stack ?? e));

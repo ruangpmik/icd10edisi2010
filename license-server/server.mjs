@@ -488,8 +488,17 @@ async function main() {
     console.error("FATAL: LICENSE_SIGNING_KID='" + config.signingKid + "' tidak ada di keysDir. Tersedia: " + Object.keys(signingKeys).join(", "));
     process.exit(1);
   }
-  db = openDb(config.dbPath);
-  limiter = createRateLimiter(db, { windowMs: config.rateWindowMs });
+  try {
+    db = openDb(config.dbPath);
+    limiter = createRateLimiter(db, { windowMs: config.rateWindowMs });
+  } catch (e) {
+    // Jangan cetak stack/path internal lebih dari perlu; gagal cepat & jelas.
+    console.error(
+      "FATAL: database lisensi tidak dapat dibuka/diinisialisasi: " +
+        config.dbPath + " (" + (e.code ?? e.message) + ")"
+    );
+    process.exit(1);
+  }
 
   // Pengaman konfigurasi: jangan pernah membuka endpoint publik tanpa TLS.
   // Produksi yang memakai reverse proxy tetap bind ke loopback.
