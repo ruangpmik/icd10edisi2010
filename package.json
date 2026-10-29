@@ -63,6 +63,7 @@
     "artifactName": "ICD10-Codex-Setup-${version}.${ext}",
     "files": [
       "electron/**/*",
+      "!electron/test/**",
       "!electron/keysets/**",
       "out/**/*",
       "shared/**/*",
