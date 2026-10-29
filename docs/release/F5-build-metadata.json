@@ -1,0 +1,129 @@
+{
+  "product": "ICD-10 Codex 2010",
+  "appId": "id.ruangpmik.icd10codex",
+  "version": "0.4.0",
+  "artifactLabel": "candidate-unsigned",
+  "source": {
+    "gitCommit": "5db0480173136805b1263cd06d9b11e7ac674ec4",
+    "gitBranch": "feat/f5-production-readiness",
+    "releaseTag": null,
+    "workingTreeDirty": true
+  },
+  "build": {
+    "builtAt": "2026-10-29T07:59:04.903Z",
+    "electronVersion": "45.0.0",
+    "nodeVersion": "v24.22.1",
+    "platform": "win32-x64",
+    "builder": "electron-builder 26.x (NSIS, per-user)",
+    "reproducible": false,
+    "reproducibleNote": "Build tidak bit-reproducible: public/data/icd10.json memuat meta.builtAt dan CSP hash dihitung ulang per build. Verifikasi memakai SHA-256 artefak yang diuji."
+  },
+  "artifacts": {
+    "installer": {
+      "file": "ICD10-Codex-Setup-0.4.0.exe",
+      "bytes": 185809318,
+      "sha256": "394cfbd9f2c657a988c50433796a4b0387d2387501f42b552a28f4182579487c"
+    },
+    "blockmap": {
+      "file": "ICD10-Codex-Setup-0.4.0.exe.blockmap",
+      "bytes": 195766,
+      "sha256": "3649d4fd93cfecdd7e5738bafcecd442d8a1736a811d0d5f692dcf2b67cf7e74"
+    },
+    "exe": {
+      "file": "win-unpacked/ICD-10 Codex 2010.exe",
+      "bytes": 249852928,
+      "sha256": "9e406cc1e8ee079803bb28de091685ccaaf2ada1d913c4ce5a78aad7ed9db45a"
+    },
+    "asar": {
+      "file": "win-unpacked/resources/app.asar",
+      "bytes": 198999655,
+      "sha256": "d02c656282dd6aa27c4362bcee0275d92b822216fab6b07f5fd406fde8f89bbc"
+    }
+  },
+  "trust": {
+    "expectedKeyset": "candidate",
+    "embeddedKids": [
+      "prod-candidate-2026-10"
+    ],
+    "embeddedFingerprints": [
+      {
+        "kid": "prod-candidate-2026-10",
+        "spkiSha256": "8eb4f398dae0c24e8f4fe4d2348686bec3584d3238ee9fd31ef0e267dbde9a23"
+      }
+    ],
+    "keysetFileMatchesEmbedded": true,
+    "embeddedServerUrl": "",
+    "testKeyTrusted": false
+  },
+  "fuses": {
+    "RunAsNode": "DISABLE",
+    "EnableCookieEncryption": "DISABLE",
+    "EnableNodeOptionsEnvironmentVariable": "DISABLE",
+    "EnableNodeCliInspectArguments": "DISABLE",
+    "EnableEmbeddedAsarIntegrityValidation": "ENABLE",
+    "OnlyLoadAppFromAsar": "ENABLE",
+    "LoadBrowserProcessSpecificV8Snapshot": "DISABLE",
+    "GrantFileProtocolExtraPrivileges": "ENABLE",
+    "WasmTrapHandlers": "ENABLE"
+  },
+  "signing": {
+    "status": "unsigned",
+    "codeSigned": false,
+    "publisher": null,
+    "signatureVerified": false,
+    "timestamped": false,
+    "note": "Tidak ada sertifikat code signing tepercaya; artefak hanya untuk pengujian/beta terbatas."
+  },
+  "deployment": {
+    "productionServer": "BLOCKED",
+    "publicHttpsTested": false,
+    "note": "VPS/domain/sertifikat TLS publik belum tersedia; serverUrl build kosong (fail-secure)."
+  },
+  "tests": [
+    {
+      "name": "api-functional",
+      "result": "46/46"
+    },
+    {
+      "name": "ops",
+      "result": "39/39"
+    },
+    {
+      "name": "backup",
+      "result": "20/20"
+    },
+    {
+      "name": "trust-selftest",
+      "result": "17/17"
+    },
+    {
+      "name": "keyset-guard",
+      "result": "9/9"
+    },
+    {
+      "name": "e2e-packaged",
+      "result": "7/7"
+    },
+    {
+      "name": "upgrade-0.3.0-to-0.4.0",
+      "result": "15/15"
+    },
+    {
+      "name": "web-smoke",
+      "result": "6/6"
+    },
+    {
+      "name": "tsc",
+      "result": "0-error"
+    },
+    {
+      "name": "npm-audit",
+      "result": "0-vuln"
+    },
+    {
+      "name": "verify-data",
+      "result": "IDENTIK"
+    }
+  ],
+  "releaseGate": "BLOCKED (produksi); beta terbatas diizinkan"
+}
