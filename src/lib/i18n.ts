@@ -14,6 +14,13 @@ export interface UiStrings {
   fbTitle: string;
   fbSub: string;
   fbOpenNew: string;
+  about: string;
+  aboutTitle: string;
+  aboutSub: string;
+  aboutBody: string[];
+  aboutFacts: string[];
+  aboutCredits: string;
+  aboutSource: string;
   toLight: string;
   toDark: string;
   searchPh: string;
@@ -173,6 +180,16 @@ const ID: UiStrings = {
   fbTitle: "Kirim Masukan",
   fbSub: "Laporkan kode yang salah, catatan yang hilang, atau tampilan yang mengganggu.",
   fbOpenNew: "Buka di tab baru",
+  about: "Tentang",
+  aboutTitle: "Tentang ICD-10 Codex 2010",
+  aboutSub: "Rujukan WHO ICD-10 2010 (ClaML) + padanan istilah Indonesia",
+  aboutBody: [
+    "Penampil rujukan ICD-10 Edisi 2010 WHO (format ClaML), lengkap dengan padanan istilah Indonesia — pencarian kode & istilah, indeks A–Z, indeks morfologi neoplasma, tabel khusus, dan detail kode.",
+    "Berjalan offline penuh. Ditujukan untuk perekam medis, koder, dan mahasiswa kesehatan.",
+  ],
+  aboutFacts: ["22 bab", "437 padanan istilah Indonesia", "11.373 node", "Berjalan offline"],
+  aboutCredits: "Dikembangkan oleh RUANGPMIK",
+  aboutSource: "Sumber data: WHO ICD-10 2010 (ClaML). Penggunaan data mengikuti ketentuan WHO.",
   toLight: "Mode terang",
   toDark: "Mode gelap",
   searchPh: "Cari kode / diagnosis…",
@@ -351,6 +368,16 @@ const EN: UiStrings = {
   fbTitle: "Send Feedback",
   fbSub: "Report a wrong code, a missing note, or a layout that gets in the way.",
   fbOpenNew: "Open in a new tab",
+  about: "About",
+  aboutTitle: "About ICD-10 Codex 2010",
+  aboutSub: "WHO ICD-10 2010 reference (ClaML) + Indonesian term equivalents",
+  aboutBody: [
+    "A reference viewer for the WHO ICD-10 2010 Edition (ClaML), with Indonesian term equivalents — code & term search, A–Z index, neoplasm morphology index, special tables, and full code details.",
+    "Works fully offline. Built for medical record professionals, coders, and health students.",
+  ],
+  aboutFacts: ["22 chapters", "437 Indonesian terms", "11,373 nodes", "Works offline"],
+  aboutCredits: "Developed by RUANGPMIK",
+  aboutSource: "Data source: WHO ICD-10 2010 (ClaML). Data usage follows WHO terms.",
   toLight: "Light mode",
   toDark: "Dark mode",
   searchPh: "Search code / diagnosis…",

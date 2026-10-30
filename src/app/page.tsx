@@ -222,6 +222,7 @@ export default function Page() {
   const [zoom, setZoom] = useState(1);
   const [showGuide, setShowGuide] = useState(false);
   const [showFb, setShowFb] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [validOnly, setValidOnly] = useState(false);
   const [scope, setScope] = useState<Scope>({ ...ALL_SCOPE });
   const [mode, setMode] = useState<"tree" | "index">("tree");
@@ -251,6 +252,7 @@ export default function Page() {
   const morphDlg = useDialogFocus(morphOpen);
   const guideDlg = useDialogFocus(showGuide);
   const fbDlg = useDialogFocus(showFb);
+  const aboutDlg = useDialogFocus(showAbout);
   const [mt, setMt] = useState<Record<string, { title: string; rub: Record<string, string[]> }>>({});
   const [mtBusy, setMtBusy] = useState(false);
   const [mtErr, setMtErr] = useState<string | null>(null);
@@ -440,6 +442,15 @@ export default function Page() {
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
   }, [showFb]);
+
+  useEffect(() => {
+    if (!showAbout) return;
+    const fn = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowAbout(false);
+    };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [showAbout]);
 
   const pickLang = (l: Lang) => {
     setLang(l);
@@ -1207,9 +1218,10 @@ export default function Page() {
             <img src="logo.png" alt="RUANGPMIK" className="h-11 w-auto shrink-0 rounded-md ring-1 ring-white/20" />
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-[17px] font-bold leading-tight">
-                ICD-10 2010 Browser <span className="text-xs font-normal text-white/70">(EN + Indonesia)</span>
+                ICD-10 Codex 2010 <span className="text-xs font-normal text-white/70">(EN + Indonesia)</span>
               </h1>
               <p className="flex flex-wrap items-center gap-x-2 text-xs text-white/70">
+                <span className="shrink-0 font-semibold tracking-wide text-white/90">oleh RUANGPMIK</span>
                 <span className="min-w-0 truncate">
                 {data ? t.subtitleStats(data.meta.chapters, data.meta.blocks, data.meta.categories.toLocaleString(lang === "id" ? "id-ID" : "en-US")) : (
                   <span className="inline-flex items-center gap-1">
@@ -1254,6 +1266,13 @@ export default function Page() {
             <div className="flex items-center gap-0.5 rounded-xl bg-white/10 p-1">
               <HBtn title={t.print} onClick={() => window.print()}><Printer size={15} /><span className="max-sm:hidden">{t.print}</span></HBtn>
               <HBtn title={t.guide} onClick={() => setShowGuide(true)}><BookOpen size={15} /><span className="max-sm:hidden">{t.guide}</span></HBtn>
+              <button
+                onClick={() => setShowAbout(true)}
+                title={t.about}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
+              >
+                <Info size={15} /><span className="max-sm:hidden">{t.about}</span>
+              </button>
               <button
                 onClick={() => setShowFb(true)}
                 title={t.feedback}
@@ -2550,6 +2569,52 @@ export default function Page() {
               <button
                 className="inline-flex items-center gap-1.5 rounded-lg bg-pmik-orange px-4 py-2 text-[13px] font-semibold text-navy-950 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
                 onClick={() => setShowGuide(false)}
+              >
+                <Check size={14} /> {t.close}
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {showAbout && (
+        <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 p-3 backdrop-blur-sm sm:p-4" onClick={() => setShowAbout(false)}>
+          <div ref={aboutDlg} role="dialog" aria-modal="true" aria-label={t.aboutTitle} className="flex max-h-[88vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-navy-950/10 dark:bg-navy-900 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
+            <header className="flex shrink-0 items-start gap-3 border-b border-slate-100 bg-gradient-to-r from-teal-50 to-white px-5 py-4 dark:border-white/10 dark:from-teal-950/40 dark:to-navy-900">
+              <img src="logo.png" alt="" className="h-10 w-auto shrink-0 rounded-lg ring-1 ring-navy-950/10 dark:ring-white/10" />
+              <div className="min-w-0 flex-1">
+                <h2 className="text-[16.5px] font-bold leading-snug text-navy-900 dark:text-white">{t.aboutTitle}</h2>
+                <p className="mt-0.5 text-[12px] text-slate-500 dark:text-slate-400">{t.aboutSub}</p>
+              </div>
+              <button
+                onClick={() => setShowAbout(false)}
+                title={t.close}
+                aria-label={t.close}
+                className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500 dark:hover:bg-white/10 dark:hover:text-slate-200"
+              >
+                <X size={17} />
+              </button>
+            </header>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              <div className="flex flex-wrap gap-2">
+                {t.aboutFacts.map((f, i) => (
+                  <span key={i} className="inline-flex items-center rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-[12px] font-medium text-teal-800 dark:border-teal-900/60 dark:bg-teal-950/30 dark:text-teal-200">
+                    {f}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-4 space-y-3 text-[13.5px] leading-relaxed text-slate-700 dark:text-slate-200">
+                {t.aboutBody.map((p, i) => <p key={i}>{p}</p>)}
+              </div>
+              <p className="mt-4 text-[12.5px] text-slate-500 dark:text-slate-400">{t.aboutSource}</p>
+            </div>
+
+            <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-3 dark:border-white/10 dark:bg-navy-950/40">
+              <span className="text-[13px] font-semibold text-pmik-orange">{t.aboutCredits}</span>
+              <button
+                className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-teal-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
+                onClick={() => setShowAbout(false)}
               >
                 <Check size={14} /> {t.close}
               </button>
