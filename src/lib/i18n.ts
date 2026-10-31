@@ -14,6 +14,12 @@ export interface UiStrings {
   fbTitle: string;
   fbSub: string;
   fbOpenNew: string;
+  fbEmail: string;
+  fbEmailPh: string;
+  fbMsg: string;
+  fbMsgPh: string;
+  fbSend: string;
+  fbHint: string;
   about: string;
   aboutTitle: string;
   aboutSub: string;
@@ -180,6 +186,12 @@ const ID: UiStrings = {
   fbTitle: "Kirim Masukan",
   fbSub: "Laporkan kode yang salah, catatan yang hilang, atau tampilan yang mengganggu.",
   fbOpenNew: "Buka di tab baru",
+  fbEmail: "Email (opsional)",
+  fbEmailPh: "nama@contoh.com",
+  fbMsg: "Feedback / Masukan",
+  fbMsgPh: "Tulis koreksi kode, catatan yang hilang, atau tampilan yang mengganggu…",
+  fbSend: "Lanjut ke formulir",
+  fbHint: "Isi di sini. Formulir Google lalu terbuka di browser dengan isian Anda sudah terisi — tekan Kirim di sana.",
   about: "Tentang",
   aboutTitle: "Tentang ICD-10 Codex 2010",
   aboutSub: "Rujukan WHO ICD-10 2010 (ClaML) + padanan istilah Indonesia",
@@ -368,6 +380,12 @@ const EN: UiStrings = {
   fbTitle: "Send Feedback",
   fbSub: "Report a wrong code, a missing note, or a layout that gets in the way.",
   fbOpenNew: "Open in a new tab",
+  fbEmail: "Email (optional)",
+  fbEmailPh: "you@example.com",
+  fbMsg: "Feedback",
+  fbMsgPh: "Describe a wrong code, a missing note, or a layout that gets in the way…",
+  fbSend: "Continue to form",
+  fbHint: "Fill it in here. The Google Form then opens in your browser with your answers prefilled — press Send there.",
   about: "About",
   aboutTitle: "About ICD-10 Codex 2010",
   aboutSub: "WHO ICD-10 2010 reference (ClaML) + Indonesian term equivalents",

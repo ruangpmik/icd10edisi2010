@@ -223,6 +223,8 @@ export default function Page() {
   const [showGuide, setShowGuide] = useState(false);
   const [showFb, setShowFb] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [fbEmail, setFbEmail] = useState("");
+  const [fbMsg, setFbMsg] = useState("");
   const [validOnly, setValidOnly] = useState(false);
   const [scope, setScope] = useState<Scope>({ ...ALL_SCOPE });
   const [mode, setMode] = useState<"tree" | "index">("tree");
