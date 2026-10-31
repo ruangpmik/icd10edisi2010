@@ -26,11 +26,14 @@ const LS_CUSTOM = "icd10-id-custom-v1";
 const LS_NOTES = "icd10-notes-v1";
 const LS_LANG = "icd10-lang";
 
-/** Tujuan masukan: Google Form, dibuka sebagai popup di dalam aplikasi. */
-const FB_FORM =
-  "https://docs.google.com/forms/d/e/1FAIpQLScJXuA6wKF3EG1IenqddSsGvdDxXI-_sjCRCKiq50FeKjLqRw/viewform?embedded=true";
-const FB_FORM_NEW =
-  "https://docs.google.com/forms/d/e/1FAIpQLScJXuA6wKF3EG1IenqddSsGvdDxXI-_sjCRCKiq50FeKjLqRw/viewform?usp=header";
+/** Tujuan masukan: Google Form. Diisi lewat form native, lalu form Google
+ *  dibuka di browser sistem dengan isian sudah terisi (prefill). */
+const FB_FORM_BASE =
+  "https://docs.google.com/forms/d/e/1FAIpQLScJXuA6wKF3EG1IenqddSsGvdDxXI-_sjCRCKiq50FeKjLqRw/viewform";
+const FB_FORM_NEW = `${FB_FORM_BASE}?usp=header`;
+const FB_ENTRY_EMAIL = "entry.1129774762";
+const FB_ENTRY_EMAIL2 = "entry.456538706";
+const FB_ENTRY_MSG = "entry.363669493";
 
 /** Sumber data tab "Indeks Aâ€“Z": 4 daftar + 1 tampilan tabel matriks. */
 type IdxSrc = "alpha" | "ext" | "neo" | "drugs" | "tables";
@@ -2474,7 +2477,7 @@ export default function Page() {
 
       {showFb && (
         <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 p-3 backdrop-blur-sm sm:p-4" onClick={() => setShowFb(false)}>
-          <div ref={fbDlg} role="dialog" aria-modal="true" aria-label={t.fbTitle} className="flex h-[88vh] max-h-[88vh] w-full max-w-[720px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-navy-950/10 dark:bg-navy-900 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
+          <div ref={fbDlg} role="dialog" aria-modal="true" aria-label={t.fbTitle} className="flex max-h-[88vh] w-full max-w-[520px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-navy-950/10 dark:bg-navy-900 dark:ring-white/10" onClick={(e) => e.stopPropagation()}>
             <header className="flex shrink-0 items-start gap-3 border-b border-slate-100 bg-gradient-to-r from-teal-50 to-white px-5 py-3.5 dark:border-white/10 dark:from-teal-950/40 dark:to-navy-900">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white shadow-sm dark:bg-teal-700">
                 <MessageSquare size={18} />
@@ -2493,30 +2496,72 @@ export default function Page() {
               </button>
             </header>
 
-            <div className="min-h-0 flex-1 bg-slate-50 dark:bg-navy-950">
-              <iframe
-                src={FB_FORM}
-                title={t.fbTitle}
-                loading="lazy"
-                className="h-full w-full border-0"
-              />
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+              <label className="block">
+                <span className="mb-1.5 block text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
+                  {t.fbEmail}
+                </span>
+                <input
+                  type="email"
+                  value={fbEmail}
+                  onChange={(e) => setFbEmail(e.target.value)}
+                  placeholder={t.fbEmailPh}
+                  autoComplete="off"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-[13.5px] text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-white/15 dark:bg-navy-950 dark:text-slate-100 dark:placeholder:text-slate-500"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
+                  {t.fbMsg} <span className="text-red-500">*</span>
+                </span>
+                <textarea
+                  value={fbMsg}
+                  onChange={(e) => setFbMsg(e.target.value)}
+                  placeholder={t.fbMsgPh}
+                  rows={7}
+                  className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-[13.5px] leading-relaxed text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-white/15 dark:bg-navy-950 dark:text-slate-100 dark:placeholder:text-slate-500"
+                />
+              </label>
+              <p className="flex items-start gap-2 text-[12px] leading-relaxed text-slate-500 dark:text-slate-400">
+                <Info size={14} className="mt-px shrink-0 text-slate-400 dark:text-slate-500" />
+                <span>{t.fbHint}</span>
+              </p>
             </div>
 
-            <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-2.5 dark:border-white/10 dark:bg-navy-950/40">
+            <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/80 px-6 py-3.5 dark:border-white/10 dark:bg-navy-950/40">
               <a
                 href={FB_FORM_NEW}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[12px] font-medium text-teal-700 hover:underline dark:text-teal-300"
+                className="inline-flex items-center gap-1 text-[12px] font-medium text-slate-500 transition hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300"
               >
                 {t.fbOpenNew} <ExternalLink size={11} />
               </a>
-              <button
-                className="inline-flex items-center gap-1.5 rounded-lg bg-pmik-orange px-4 py-2 text-[13px] font-semibold text-navy-950 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
-                onClick={() => setShowFb(false)}
-              >
-                <Check size={14} /> {t.close}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  className="rounded-lg px-3.5 py-2 text-[13px] font-medium text-slate-600 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500 dark:text-slate-300 dark:hover:bg-white/10"
+                  onClick={() => setShowFb(false)}
+                >
+                  {t.close}
+                </button>
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-white/10 dark:disabled:text-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
+                  disabled={!fbMsg.trim()}
+                  onClick={() => {
+                    const p = new URLSearchParams({ usp: "pp_url" });
+                    const email = fbEmail.trim();
+                    if (email) {
+                      p.set(FB_ENTRY_EMAIL, email);
+                      p.set(FB_ENTRY_EMAIL2, email);
+                    }
+                    p.set(FB_ENTRY_MSG, fbMsg.trim());
+                    window.open(`${FB_FORM_BASE}?${p.toString()}`, "_blank", "noopener");
+                    setShowFb(false);
+                  }}
+                >
+                  <ExternalLink size={14} /> {t.fbSend}
+                </button>
+              </div>
             </footer>
           </div>
         </div>
