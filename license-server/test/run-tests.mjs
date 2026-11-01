@@ -203,6 +203,28 @@ async function main() {
   ok("renewal dengan installationId lain (bukan pemilik) → 403 wrong_activation",
     (await post("/v1/renew", { lease: goodLease, installationId: uuid() })).status === 403);
 
+  // ============ ANTI-COPY: sidik perangkat (device_id) ============
+  const licDev = await adminCreate(1);
+  const devInst = uuid();
+  const fpReal = "win:" + "a".repeat(32);
+  const fpClone = "win:" + "b".repeat(32);
+  const devAct = await post("/v1/activate", { licenseKey: licDev.licenseKey, installationId: devInst, deviceId: fpReal });
+  ok("aktivasi dgn deviceId → 200", devAct.status === 200);
+  const devRenewOk = await post("/v1/renew", { lease: devAct.j.lease, installationId: devInst, deviceId: fpReal });
+  ok("renew dgn deviceId sama → 200", devRenewOk.status === 200);
+  const devRenewClone = await post("/v1/renew", { lease: devAct.j.lease, installationId: devInst, deviceId: fpClone });
+  ok("renew installationId sama tapi deviceId beda (clone) → 403 wrong_activation",
+    devRenewClone.status === 403 && devRenewClone.j?.error === "wrong_activation");
+  const devRenewNoFp = await post("/v1/renew", { lease: devAct.j.lease, installationId: devInst });
+  ok("renew tanpa deviceId tetap 200 (kompatibel klien lama)", devRenewNoFp.status === 200);
+  ok("deviceId format tidak sah → 400",
+    (await post("/v1/activate", { licenseKey: licDev.licenseKey, installationId: uuid(), deviceId: "x" })).status === 400);
+  // Re-aktivasi dari clone (installationId sama, deviceId beda) tidak boleh menimpa ikatan.
+  const cloneRe = await post("/v1/activate", { licenseKey: licDev.licenseKey, installationId: devInst, deviceId: fpClone });
+  const cloneRenew = await post("/v1/renew", { lease: cloneRe.j?.lease, installationId: devInst, deviceId: fpClone });
+  ok("clone tak bisa mengikat ulang device_id lewat aktivasi → tetap 403",
+    cloneRe.status === 200 && cloneRenew.status === 403 && cloneRenew.j?.error === "wrong_activation");
+
   // ============ NEGATIVE: status lisensi ============
   const licRev = await adminCreate(1);
   const rDev = uuid();

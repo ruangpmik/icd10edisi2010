@@ -23,11 +23,13 @@ export function openDb(dbPath) {
     );
 
     -- Aktivasi perangkat per lisensi. installation_id = uuid acak per instalasi
-    -- (bukan fingerprint perangkat).
+    -- (bukan fingerprint perangkat). device_id = sidik hardware ter-hash (opsional,
+    -- anti-copy); NULL = tidak diikat ke hardware.
     CREATE TABLE IF NOT EXISTS activations (
       id              TEXT PRIMARY KEY,          -- uuid
       license_id      TEXT NOT NULL REFERENCES licenses(id) ON DELETE CASCADE,
       installation_id TEXT NOT NULL,             -- uuid v4 dari client
+      device_id       TEXT,                      -- hash sidik perangkat (mis. "win:...")
       created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
       last_seen_at    TEXT,
       UNIQUE (license_id, installation_id)
@@ -47,5 +49,14 @@ export function openDb(dbPath) {
     CREATE INDEX IF NOT EXISTS idx_activations_license ON activations(license_id);
     CREATE INDEX IF NOT EXISTS idx_audit_license ON audit(license_id, id);
   `);
+  // Migration: tambah kolom device_id untuk DB lama yang belum memilikinya.
+  try {
+    const cols = db.prepare("PRAGMA table_info(activations)").all();
+    if (!cols.some((c) => c.name === "device_id")) {
+      db.exec("ALTER TABLE activations ADD COLUMN device_id TEXT");
+    }
+  } catch (e) {
+    console.warn("LICENSE-DB: migrasi device_id gagal:", e?.message);
+  }
   return db;
 }

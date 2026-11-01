@@ -2,9 +2,9 @@
 // Node bawaan saja (http/https, crypto, sqlite) — tanpa dependensi npm.
 //
 // Endpoint publik:
-//   POST /v1/activate    {licenseKey, installationId}
-//   POST /v1/renew       {lease, installationId}
-//   POST /v1/deactivate  {lease, installationId}
+//   POST /v1/activate    {licenseKey, installationId, deviceId?}
+//   POST /v1/renew       {lease, installationId, deviceId?}
+//   POST /v1/deactivate  {lease, installationId, deviceId?}
 // Endpoint admin (Bearer $LICENSE_ADMIN_TOKEN):
 //   POST   /admin/licenses                 buat lisensi
 //   GET    /admin/licenses                 daftar
@@ -36,6 +36,7 @@ const PRODUCT = "icd10-codex";
 
 const LICENSE_KEY_RE = /^ICD10-[A-Z2-7]{5}(-[A-Z2-7]{5}){3}$/; // 20 simbol base32 = 100 bit entropy
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const DEVICE_ID_RE = /^[A-Za-z0-9:._-]{6,200}$/;
 
 // ---------- util ----------
 
@@ -195,7 +196,7 @@ function makeLease(row, activationId) {
 }
 
 // Verifikasi lease masuk (dari client) → {row, activation} atau {error}.
-function verifyInboundLease(lease, installationId) {
+function verifyInboundLease(lease, installationId, deviceId) {
   const r = verifyJws(lease, { allowedKeys: publicKeysOf(signingKeys) });
   if (!r.ok) return { error: "invalid_lease", detail: r.reason };
   const c = r.claims;
@@ -215,6 +216,10 @@ function verifyInboundLease(lease, installationId) {
   if (installationId && activation.installation_id !== installationId) {
     return { error: "wrong_activation", detail: "activasi milik instalasi lain" };
   }
+  // Anti-copy: bila aktivasi terikat ke perangkat, sidik harus cocok.
+  if (deviceId && activation.device_id && activation.device_id !== deviceId) {
+    return { error: "wrong_activation", detail: "activasi milik perangkat lain" };
+  }
   const row = db.prepare("SELECT * FROM licenses WHERE id = ?").get(activation.license_id);
   return { row, activation, claims: c };
 }
@@ -224,10 +229,14 @@ function verifyInboundLease(lease, installationId) {
 function handleActivate(ip, body) {
   const key = body.licenseKey;
   const installationId = body.installationId;
+  const deviceId = body.deviceId;
   if (typeof key !== "string" || !LICENSE_KEY_RE.test(key)) {
     return { code: 400, res: { error: "bad_request" } };
   }
   if (typeof installationId !== "string" || !UUID_RE.test(installationId)) {
+    return { code: 400, res: { error: "bad_request" } };
+  }
+  if (deviceId != null && (typeof deviceId !== "string" || !DEVICE_ID_RE.test(deviceId))) {
     return { code: 400, res: { error: "bad_request" } };
   }
   const keyHash = crypto.createHash("sha256").update(key, "utf8").digest("hex");
@@ -250,10 +259,20 @@ function handleActivate(ip, body) {
       .get(row.id, installationId);
     if (existing) {
       activationId = existing.id;
-      db.prepare("UPDATE activations SET last_seen_at = ? WHERE id = ?").run(
-        new Date().toISOString(),
-        existing.id
-      );
+      // Ikati device_id hanya bila belum terikat (mis. aktivasi pertama gagal
+      // baca sidik). Setelah terikat, jangan diubah — mencegah clone menimpa.
+      if (!existing.device_id && deviceId) {
+        db.prepare("UPDATE activations SET device_id = ?, last_seen_at = ? WHERE id = ?").run(
+          deviceId,
+          new Date().toISOString(),
+          existing.id
+        );
+      } else {
+        db.prepare("UPDATE activations SET last_seen_at = ? WHERE id = ?").run(
+          new Date().toISOString(),
+          existing.id
+        );
+      }
     } else if (count >= row.max_activations) {
       db.exec("ROLLBACK");
       audit(row.id, null, "activate_quota_exceeded", ip, `count=${count} max=${row.max_activations}`);
@@ -261,8 +280,8 @@ function handleActivate(ip, body) {
     } else {
       activationId = crypto.randomUUID();
       db.prepare(
-        "INSERT INTO activations (id, license_id, installation_id, last_seen_at) VALUES (?,?,?,?)"
-      ).run(activationId, row.id, installationId, new Date().toISOString());
+        "INSERT INTO activations (id, license_id, installation_id, device_id, last_seen_at) VALUES (?,?,?,?,?)"
+      ).run(activationId, row.id, installationId, deviceId || null, new Date().toISOString());
     }
     db.exec("COMMIT");
   } catch (e) {
@@ -279,7 +298,11 @@ function checkInstallation(body) {
   if (typeof installationId !== "string" || !UUID_RE.test(installationId)) {
     return { code: 400, res: { error: "bad_request" } };
   }
-  return { installationId };
+  const deviceId = body.deviceId;
+  if (deviceId != null && (typeof deviceId !== "string" || !DEVICE_ID_RE.test(deviceId))) {
+    return { code: 400, res: { error: "bad_request" } };
+  }
+  return { installationId, deviceId: deviceId || null };
 }
 
 function mapLeaseError(r) {
@@ -290,7 +313,7 @@ function mapLeaseError(r) {
 function handleRenew(ip, body) {
   const inst = checkInstallation(body);
   if (inst.code) return inst;
-  const r = verifyInboundLease(body.lease, inst.installationId);
+  const r = verifyInboundLease(body.lease, inst.installationId, inst.deviceId);
   if (!r.row) {
     audit(r.row?.id ?? null, null, "renew_denied", ip, r.error);
     return mapLeaseError(r);

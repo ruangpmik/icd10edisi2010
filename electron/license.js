@@ -14,6 +14,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
+const childProcess = require("node:child_process");
 const fss = require("node:fs");
 const path = require("node:path");
 const { app, safeStorage } = require("electron");
@@ -64,6 +65,33 @@ function getInstallationId() {
     fss.writeFileSync(f, JSON.stringify(j, null, 2));
   }
   return j.installationId;
+}
+
+// Sidik perangkat (anti-copy). Bukan secret — hanya identitas stabil per mesin.
+// - Windows: MachineGuid dari HKLM\...\Cryptography (stabil per instalasi OS).
+// - Yang dikirim hanya hash SHA-256 terpotong, bukan GUID mentah.
+// - Gagal baca / platform lain → null (fallback lunak: tetap installation_id).
+// shortcut: MachineGuid sama pada clone image VM; anti-copy ini mengunci pada
+//   instalasi OS, bukan pada hard disk fisik. Naikkan ke volume serial bila
+//   butuh ikatan ke hardware nyata.
+let _deviceId; // lazy cache; null = tidak tersedia
+function getDeviceId() {
+  if (_deviceId !== undefined) return _deviceId;
+  try {
+    if (process.platform !== "win32") { _deviceId = null; return null; }
+    const out = childProcess.execFileSync(
+      "reg",
+      ["query", "HKLM\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid"],
+      { encoding: "utf8", timeout: 3000, windowsHide: true }
+    );
+    const m = /MachineGuid\s+REG_SZ\s+\{?([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\}?/.exec(out);
+    if (!m) { _deviceId = null; return null; }
+    const guid = m[1].toLowerCase();
+    _deviceId = "win:" + crypto.createHash("sha256").update("icd10:" + guid).digest("hex").slice(0, 32);
+  } catch {
+    _deviceId = null;
+  }
+  return _deviceId;
 }
 
 // safeStorage lintas versi: utamakan API asinkron, fallback ke sinkron.
@@ -287,7 +315,7 @@ async function activate(key) {
   }
   key = key.trim().toUpperCase();
   const store = await loadStore();
-  const res = await api("/v1/activate", { licenseKey: key, installationId: getInstallationId() });
+  const res = await api("/v1/activate", { licenseKey: key, installationId: getInstallationId(), deviceId: getDeviceId() || undefined });
   const ap = applyServerResult(store, res);
   if (ap.ok) {
     store.key = key;
@@ -318,7 +346,7 @@ async function renew() {
     if (store.key) return activate(store.key); // pemulihan: lease hilang → aktivasi ulang
     return { ok: false, error: "unactivated" };
   }
-  const res = await api("/v1/renew", { lease: store.lease, installationId: getInstallationId() });
+  const res = await api("/v1/renew", { lease: store.lease, installationId: getInstallationId(), deviceId: getDeviceId() || undefined });
   let ap = applyServerResult(store, res);
   if (!ap.ok && ap.error === "invalid_lease") {
     // lease lokal ditolak server (kedaluwarsa) → coba aktivasi ulang dgn key
@@ -335,7 +363,7 @@ async function renew() {
 async function deactivate() {
   const store = await loadStore();
   if (!store.lease) return { ok: false, error: "unactivated" };
-  const res = await api("/v1/deactivate", { lease: store.lease, installationId: getInstallationId() });
+  const res = await api("/v1/deactivate", { lease: store.lease, installationId: getInstallationId(), deviceId: getDeviceId() || undefined });
   if (res.ok || res.error === "invalid_lease" || res.error === "network") {
     // lease dilepas lokal selalu; kegagalan jaringan bukan alasan mengunci slot
     store.lease = null;
