@@ -27,6 +27,9 @@ export interface UiStrings {
   aboutFacts: string[];
   aboutCredits: string;
   aboutSource: string;
+  donateTitle: string;
+  donateTagline: string;
+  donateFooter: string;
   toLight: string;
   toDark: string;
   searchPh: string;
@@ -202,6 +205,9 @@ const ID: UiStrings = {
   aboutFacts: ["22 bab", "437 padanan istilah Indonesia", "11.373 node", "Berjalan offline"],
   aboutCredits: "Dikembangkan oleh RUANGPMIK",
   aboutSource: "Sumber data: WHO ICD-10 2010 (ClaML). Penggunaan data mengikuti ketentuan WHO.",
+  donateTitle: "Traktir Kopi untuk Pengembang",
+  donateTagline: "Sedekah seikhlasnya, gunakan sepuasnya.",
+  donateFooter: "Traktir Kopi",
   toLight: "Mode terang",
   toDark: "Mode gelap",
   searchPh: "Cari kode / diagnosis…",
@@ -396,6 +402,9 @@ const EN: UiStrings = {
   aboutFacts: ["22 chapters", "437 Indonesian terms", "11,373 nodes", "Works offline"],
   aboutCredits: "Developed by RUANGPMIK",
   aboutSource: "Data source: WHO ICD-10 2010 (ClaML). Data usage follows WHO terms.",
+  donateTitle: "Buy the Developer a Coffee",
+  donateTagline: "Give as you wish, use as much as you like.",
+  donateFooter: "Buy a Coffee",
   toLight: "Light mode",
   toDark: "Dark mode",
   searchPh: "Search code / diagnosis…",

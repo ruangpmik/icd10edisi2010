@@ -65,7 +65,7 @@ const MIME = {
 };
 
 // Tautan keluar yang boleh terbuka di browser sistem.
-const EXTERNAL_OK = /^https:\/\/(icd\.who\.int|www\.who\.int|docs\.google\.com)(\/|$)/;
+const EXTERNAL_OK = /^https:\/\/(icd\.who\.int|www\.who\.int|docs\.google\.com|ruangpmik\.myr\.id)(\/|$)/;
 
 async function serve(url) {
   try {

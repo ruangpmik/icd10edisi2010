@@ -5,7 +5,7 @@ import type { KeyboardEvent as ReactKeyEvent } from "react";
 import { useTheme } from "next-themes";
 import {
   Ambulance, ArrowLeft, ArrowRight, ArrowUp, Asterisk, BadgeCheck, BookMarked, BookOpen, Check, ChevronDown, ChevronRight,
-  Circle, Copy, Dna, ExternalLink, FileText, Info, Languages, ListCollapse, ListOrdered, ListTree, Loader2, Moon, Pencil, Pill, Plus,
+  Circle, Coffee, Copy, Dna, ExternalLink, FileText, Info, Languages, ListCollapse, ListOrdered, ListTree, Loader2, Moon, Pencil, Pill, Plus,
   Printer, Search, SearchX, ShieldAlert, Stethoscope, StickyNote, Sun, Sword, Table2, Trash2, TriangleAlert, X, ZoomIn, ZoomOut,
   MessageSquare,
 } from "lucide-react";
@@ -2153,6 +2153,10 @@ export default function Page() {
         >
           {t.feedback}
         </button>
+        {"\u00b7"}{" "}
+        <a className="inline-flex items-center gap-0.5 font-semibold text-amber-700 hover:underline dark:text-amber-300" href="https://ruangpmik.myr.id/support" target="_blank" rel="noreferrer">
+          <Coffee size={11} /> {t.donateFooter}
+        </a>
       </footer>
 
       {matrixTbl && (
@@ -2654,6 +2658,22 @@ export default function Page() {
               <div className="mt-4 space-y-3 text-[13.5px] leading-relaxed text-slate-700 dark:text-slate-200">
                 {t.aboutBody.map((p, i) => <p key={i}>{p}</p>)}
               </div>
+              <a
+                href="https://ruangpmik.myr.id/support"
+                target="_blank"
+                rel="noreferrer"
+                aria-label={t.donateTitle}
+                className="mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 transition hover:border-amber-300 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30 dark:hover:border-amber-800/60 dark:hover:bg-amber-950/50"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm">
+                  <Coffee size={20} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13.5px] font-bold text-navy-900 dark:text-white">{t.donateTitle}</span>
+                  <span className="block text-[12px] text-amber-800/90 dark:text-amber-200/90">{t.donateTagline}</span>
+                </span>
+                <ExternalLink size={14} className="shrink-0 text-amber-600 dark:text-amber-300" />
+              </a>
               <p className="mt-4 text-[12.5px] text-slate-500 dark:text-slate-400">{t.aboutSource}</p>
             </div>
 
