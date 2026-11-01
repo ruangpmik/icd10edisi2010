@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyEvent } from "react";
@@ -35,7 +35,7 @@ const FB_ENTRY_EMAIL = "entry.1129774762";
 const FB_ENTRY_EMAIL2 = "entry.456538706";
 const FB_ENTRY_MSG = "entry.363669493";
 
-/** Sumber data tab "Indeks Aâ€“Z": 4 daftar + 1 tampilan tabel matriks. */
+/** Sumber data tab "Indeks A–Z": 4 daftar + 1 tampilan tabel matriks. */
 type IdxSrc = "alpha" | "ext" | "neo" | "drugs" | "tables";
 const TBL_SRC = ["neo", "drugs"] as const;
 
@@ -52,7 +52,7 @@ const TBL_DOT = ["bg-blue-500", "bg-indigo-500", "bg-violet-500", "bg-emerald-50
 const FOCUSABLE =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
-/** Rujukan "lihat: â€¦" yang tak punya tujuan sama sekali (artefak parse). */
+/** Rujukan "lihat: …" yang tak punya tujuan sama sekali (artefak parse). */
 function seeUsable(t: string): boolean {
   return !/^(also|note at|Leuk\(o)$/i.test(t.trim());
 }
@@ -339,7 +339,7 @@ export default function Page() {
     };
   }, []);
 
-  // Indeks Alfabet Vol.3 dimuat malas: hanya saat tab "Indeks Aâ€“Z" dibuka.
+  // Indeks Alfabet Vol.3 dimuat malas: hanya saat tab "Indeks A–Z" dibuka.
   useEffect(() => {
     if (mode !== "index" || idx || idxBusy) return;
     setIdxBusy(true);
@@ -369,7 +369,7 @@ export default function Page() {
       });
   }, [mode, idxSrc, tbls, tblBusy, lang]);
 
-  // Seksi II Vol.3 â€” indeks Penyebab Luar (cedera & keracunan).
+  // Seksi II Vol.3 — indeks Penyebab Luar (cedera & keracunan).
   useEffect(() => {
     if (mode !== "index" || idxSrc !== "ext" || ext || extBusy) return;
     setExtBusy(true);
@@ -468,11 +468,11 @@ export default function Page() {
     paneRef.current?.scrollTo({ top: 0 });
   }, [sel]);
   // Kode indeks sering berbentuk "X36.-" (digit ke-4 belum ditentukan) atau
-  // berpenanda â€ /â€¡/*. Buang dulu, lalu mundur ke kategori 3 karakter bila
+  // berpenanda †/‡/*. Buang dulu, lalu mundur ke kategori 3 karakter bila
   // subkategorinya tidak ada di Tabular.
   const navTarget = (raw: string) => {
     if (!data) return null;
-    const base = navCode(raw.replace(/[â€ â€¡*]/g, ""));
+    const base = navCode(raw.replace(/[†‡*]/g, ""));
     if (getNode(data, base)) return base;
     if (getNode(data, base.slice(0, 3))) return base.slice(0, 3);
     return null;
@@ -522,7 +522,7 @@ export default function Page() {
     [data, hits, q, searching]
   );
 
-  // ===== Indeks Aâ€“Z (Vol.3): alfabet penyakit + penyebab luar =====
+  // ===== Indeks A–Z (Vol.3): alfabet penyakit + penyebab luar =====
   // Keduanya memakai bentuk data yang sama (AlphaEntry), jadi satu set memo
   // dipakai untuk dua sumber; hanya berkas yang dimuat berbeda.
   const idxData: AlphaIndex | null = idxSrc === "alpha" ? idx : idxSrc === "ext" ? ext : null;
@@ -605,7 +605,7 @@ export default function Page() {
       : tblSearch.hits.filter((i) => tbl && lvlOk(tbl.entries[i][1], tblLead)).length
     : (tblBrowse.rows[letter] ?? []).filter((i) => tbl && lvlOk(tbl.entries[i][1], tblLead)).length;
 
-  // Rujukan "lihat: â€¦" bisa berupa jalur ("Neoplasm, sinus"), sedangkan entri
+  // Rujukan "lihat: …" bisa berupa jalur ("Neoplasm, sinus"), sedangkan entri
   // hanya menyimpan istilahnya sendiri. resolveSee mencocokkan lewat rantai induk,
   // lalu daftar digulir ke baris itu (bukan mencari teks jalur yang tak akan ketemu).
   const [jump, setJump] = useState<{ i: number; n: number } | null>(null);
@@ -631,7 +631,7 @@ export default function Page() {
     const levels = entries.map((e) => (table ? (e as TableEntry)[1] : (e as AlphaEntry)[2]));
     let i = resolveSee(terms, levels, target);
     // Rujukan kadang menambah keterangan yang tak ada di daftar tujuan
-    // ("Neoplasm, connective tissue, malignant" â€” kolom tabel yang menentukan
+    // ("Neoplasm, connective tissue, malignant" — kolom tabel yang menentukan
     // keganasan). Coba bertahap tanpa bagian terakhir.
     for (let k = 0; i < 0 && k < 2; k++) {
       const parts = splitSeeTarget(target);
@@ -642,11 +642,11 @@ export default function Page() {
     return i >= 0 && land(entries, table, leadLevel, i);
   };
   // Rujukan ke awalan ("Levo-", "Sulf-", "specific protein") tidak punya entri
-  // persis, jadi dicari entri pertama yang berawalan itu â€” utamakan lead term.
+  // persis, jadi dicari entri pertama yang berawalan itu — utamakan lead term.
   const jumpPrefix = (entries: (AlphaEntry | TableEntry)[], table: boolean, leadLevel: number, target: string) => {
     const lvl = (k: number) => (table ? (entries[k] as TableEntry)[1] : (entries[k] as AlphaEntry)[2]);
     const lower = entries.map((e) => e[0].toLowerCase());
-    // "specific substance" â†’ "substance": kata umumnya dibuang lebih dulu.
+    // "specific substance" → "substance": kata umumnya dibuang lebih dulu.
     const tries = [target.trim(), target.trim().replace(/^specific\s+/i, "")];
     for (const raw of tries) {
       const p = raw.replace(/[-\s]+$/, "").toLowerCase();
@@ -677,12 +677,12 @@ export default function Page() {
     requestAnimationFrame(() => listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" }));
     return true;
   };
-  // Rujukan berkode ("Note at category O80.-", "categories D50â€“D77",
-  // "E10â€“E14 with fourth character .6") tak punya entri indeks; buka kodenya.
+  // Rujukan berkode ("Note at category O80.-", "categories D50–D77",
+  // "E10–E14 with fourth character .6") tak punya entri indeks; buka kodenya.
   const gotoCodeRef = (target: string) => {
     if (!data) return false;
     const t = target.trim();
-    const range = /^([A-Z]\d{2})\s*[â€“â€”-]\s*[A-Z]\d{2}\s+with fourth character\s*\.?\s*(\d)/i.exec(t);
+    const range = /^([A-Z]\d{2})\s*[–—-]\s*[A-Z]\d{2}\s+with fourth character\s*\.?\s*(\d)/i.exec(t);
     const note = /^note at\s+(?:category\s+)?([A-Z]\d{2})(?:\.(\d))?/i.exec(t);
     const cats = /^categories?\s+([A-Z]\d{2})/i.exec(t);
     const code = range ? `${range[1]}.${range[2]}` : note ? (note[2] ? `${note[1]}.${note[2]}` : note[1]) : cats ? cats[1] : "";
@@ -707,7 +707,7 @@ export default function Page() {
     target = target.replace(/^also\s*/i, "").trim();
     if (!target) return;
     // Blok neoplasma ada di tabel terpisah; di indeks alfabet hanya tersisa
-    // baris kepalanya, jadi rujukan "Neoplasm, â€¦" selalu diarahkan ke sana.
+    // baris kepalanya, jadi rujukan "Neoplasm, …" selalu diarahkan ke sana.
     if (isList && /^neoplas/i.test(target.trim())) {
       setPendingSee({ target, src: "neo" });
       setIdxSrc("neo");
@@ -790,7 +790,7 @@ export default function Page() {
   const letterCounts = isList ? idxBrowse.counts : isTbl ? tblBrowse.counts : {};
 
   // Header lengket di atas daftar: saat digulir, tampilkan jalur induk baris
-  // teratas (lead term > subterm) supaya pembaca tidak kehilangan konteks â€”
+  // teratas (lead term > subterm) supaya pembaca tidak kehilangan konteks —
   // pengganti penanda "continued" di buku cetak.
   const [stickyPath, setStickyPath] = useState<{ i: number; t: string }[]>([]);
   const stickyRaf = useRef(0);
@@ -887,7 +887,7 @@ export default function Page() {
           {(path || see) && (
             <span className="mt-0.5 block truncate text-[11px] text-slate-500 dark:text-slate-400">
               {path}
-              {path && see ? " Â· " : ""}
+              {path && see ? " · " : ""}
               {see && (
                 <button
                   onClick={() => gotoSee(see)}
@@ -904,7 +904,7 @@ export default function Page() {
             cOk ? (
               <button
                 onClick={() => go(c)}
-                title={`${t.detail} â€” ${c}`}
+                title={`${t.detail} — ${c}`}
                 className="rounded border border-blue-200 bg-blue-50 px-1.5 py-px font-mono text-[11.5px] font-bold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300 dark:hover:border-sky-500"
               >
                 {c}
@@ -920,7 +920,7 @@ export default function Page() {
           {c2 && c2Ok && (
             <button
               onClick={() => go(c2)}
-              title={`${t.detail} â€” ${c2}`}
+              title={`${t.detail} — ${c2}`}
               className="rounded border border-amber-200 bg-amber-50 px-1.5 py-px font-mono text-[11.5px] font-bold text-amber-700 transition hover:border-amber-400 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300 dark:hover:border-amber-600"
             >
               {c2}
@@ -991,7 +991,7 @@ export default function Page() {
                 <button
                   key={ci}
                   onClick={() => go(target)}
-                  title={`${tblCols[ci]} â€” ${c}`}
+                  title={`${tblCols[ci]} — ${c}`}
                   className={`rounded border px-1.5 py-px font-mono text-[11px] font-bold transition ${TBL_CHIP[ci]}`}
                 >
                   {c}
@@ -999,7 +999,7 @@ export default function Page() {
               ) : (
                 <span
                   key={ci}
-                  title={`${tblCols[ci]} â€” ${c}`}
+                  title={`${tblCols[ci]} — ${c}`}
                   className="rounded border border-slate-200 bg-slate-50 px-1.5 py-px font-mono text-[11px] font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
                 >
                   {c}
@@ -1119,7 +1119,7 @@ export default function Page() {
   const copyCode = async () => {
     if (!node) return;
     try {
-      await navigator.clipboard.writeText(`${node.code} â€” ${preferred(node)}`);
+      await navigator.clipboard.writeText(`${node.code} — ${preferred(node)}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {}
@@ -1175,7 +1175,7 @@ export default function Page() {
           );
         if (s.morph)
           return (
-            <button key={i} className="codelink" onClick={() => openMorph(s.morph!)} title={`${t.morphOpen} â€” ${s.morph}`}>
+            <button key={i} className="codelink" onClick={() => openMorph(s.morph!)} title={`${t.morphOpen} — ${s.morph}`}>
               {s.text}
             </button>
           );
@@ -1188,7 +1188,7 @@ export default function Page() {
             key={i}
             className="codelink"
             onClick={() => go(tgt)}
-            title={`${n ? preferred(n) : tgt}${approx ? ` Â· ${t.refBase} ${tgt}` : ""}`}
+            title={`${n ? preferred(n) : tgt}${approx ? ` · ${t.refBase} ${tgt}` : ""}`}
           >
             {s.text}
           </button>
@@ -1457,7 +1457,7 @@ export default function Page() {
               </p>
             ) : (
               <>
-                <div className="flex flex-wrap gap-1" role="group" aria-label="Aâ€“Z">
+                <div className="flex flex-wrap gap-1" role="group" aria-label="A–Z">
                   {ALPHA_LETTERS.map((L) => {
                     const n = letterCounts[L] ?? 0;
                     const active = !idxSearching && letter === L;
@@ -1470,7 +1470,7 @@ export default function Page() {
                         }}
                         disabled={n === 0}
                         aria-pressed={active}
-                        title={`${L} â€” ${n}`}
+                        title={`${L} — ${n}`}
                         className={`h-6 w-6 rounded-md text-[11.5px] font-semibold transition disabled:opacity-30 ${
                           active
                             ? "bg-teal-700 text-white"
@@ -1510,9 +1510,9 @@ export default function Page() {
                       {idxSrc === "alpha"
                         ? t.indexSource
                         : idxData
-                          ? t.idxExtSrc(idxData.meta.pages.replace("-", "â€“"))
+                          ? t.idxExtSrc(idxData.meta.pages.replace("-", "–"))
                           : tbl
-                            ? t.idxTblSrc(tbl.meta.pages.replace("-", "â€“"))
+                            ? t.idxTblSrc(tbl.meta.pages.replace("-", "–"))
                             : ""}
                     </span>
                   </span>
@@ -1558,7 +1558,7 @@ export default function Page() {
                           </span>
                           <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500 dark:text-slate-400">
                             <span className="inline-flex items-center gap-0.5"><ListOrdered size={10} /> {t.specialRows(tb.rows.length)}</span>
-                            <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.specialPages(tb.pages.replace("-", "â€“"))}</span>
+                            <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.specialPages(tb.pages.replace("-", "–"))}</span>
                             <span className="inline-flex items-center gap-0.5"><ChevronRight size={10} /> {t.specialOpen}</span>
                           </span>
                         </span>
@@ -1593,7 +1593,7 @@ export default function Page() {
                           className="flex min-w-0 items-center gap-1 text-left font-medium text-teal-800 transition hover:text-teal-900 dark:text-teal-200 dark:hover:text-teal-100"
                         >
                           <ArrowUp size={12} className="shrink-0 opacity-70" aria-hidden />
-                          <span className="truncate">{stickyPath.map((p) => p.t).join(" â€º ")}</span>
+                          <span className="truncate">{stickyPath.map((p) => p.t).join(" › ")}</span>
                         </button>
                       )}
                     </div>
@@ -1747,7 +1747,7 @@ export default function Page() {
                   {trail[0]?.code === "II" && node.kind === "category" && (
                     <button
                       onClick={() => openMorph()}
-                      title={`${t.morphOpen} â€” ${t.morphTitle}`}
+                      title={`${t.morphOpen} — ${t.morphTitle}`}
                       className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-px text-[11px] font-medium transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 ${TONE.violet}`}
                     >
                       <Dna size={12} /> {t.morphBadge}
@@ -1839,7 +1839,7 @@ export default function Page() {
                   // 4/5 karakter (mis. F10.2, V01.00), tetap pakai induknya agar baris bisa diklik.
                   const base = pos === "5" ? node.code.slice(0, 5) : node.code.slice(0, 3);
                   // Baris aktif: kode node sendiri untuk karakter ke-5, atau leluhur
-                  // 5-karakter untuk karakter ke-4 (V01.00 â†’ baris V01.0 ikut aktif).
+                  // 5-karakter untuk karakter ke-4 (V01.00 → baris V01.0 ikut aktif).
                   const own = pos === "5" ? node.code : node.code.slice(0, 5);
                   const activeSub = m.subs.find((s) => subFull(base, m.code, s.c) === own);
                   // Karakter ke-5 baru punya kode setelah karakter ke-4 dipilih.
@@ -1848,7 +1848,7 @@ export default function Page() {
                   const collapsible = !!activeSub && m.subs.length > 3;
                   // Modifier yang menghasilkan kode yang sudah ada sebagai node nyata
                   // (mis. place of occurrence pada X34 yang sudah punya .0-.9) tidak
-                  // ditampilkan â€” labelnya akan menimpa makna kode asli.
+                  // ditampilkan — labelnya akan menimpa makna kode asli.
                   const collides = m.subs.some((s) => {
                     const full = subFull(base, m.code, s.c);
                     return !!full && !!data.nodes[full];
@@ -1869,9 +1869,9 @@ export default function Page() {
                               <span>
                                 {s.label}
                                 {full && !active && (
-                                  <span className="text-slate-500 dark:text-slate-400"> â€” <span className="font-mono">{full}</span></span>
+                                  <span className="text-slate-500 dark:text-slate-400"> — <span className="font-mono">{full}</span></span>
                                 )}
-                                {s.usage === "dagger" && <span title={t.daggerE}> â€ </span>}
+                                {s.usage === "dagger" && <span title={t.daggerE}> †</span>}
                                 {s.usage === "aster" && <span title={t.asteriskM}> *</span>}
                               </span>
                             </>
@@ -1929,7 +1929,7 @@ export default function Page() {
                           </span>
                           <span>
                             {activeSub!.label}
-                            {activeSub!.usage === "dagger" && <span title={t.daggerE}> â€ </span>}
+                            {activeSub!.usage === "dagger" && <span title={t.daggerE}> †</span>}
                             {activeSub!.usage === "aster" && <span title={t.asteriskM}> *</span>}
                           </span>
                         </p>
@@ -2143,8 +2143,8 @@ export default function Page() {
 
       <footer className="no-print mx-auto w-full max-w-[1440px] shrink-0 px-4 pb-3 text-xs text-slate-600 dark:text-slate-400">
         {t.footerMid}{" "}
-        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/2010/en" target="_blank" rel="noreferrer">WHO Browser 2010 <ExternalLink size={11} /></a> â€¢{" "}
-        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/Content/statichtml/ICD10Volume2_en_2010.pdf" target="_blank" rel="noreferrer">Manual Vol.2 (PDF) <ExternalLink size={11} /></a> â€¢{" "}
+        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/2010/en" target="_blank" rel="noreferrer">WHO Browser 2010 <ExternalLink size={11} /></a> •{" "}
+        <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/Content/statichtml/ICD10Volume2_en_2010.pdf" target="_blank" rel="noreferrer">Manual Vol.2 (PDF) <ExternalLink size={11} /></a> •{" "}
         <a className="inline-flex items-center gap-0.5 text-blue-700 hover:underline dark:text-sky-300" href="https://icd.who.int/browse10/Help/en" target="_blank" rel="noreferrer">User Guide <ExternalLink size={11} /></a>{" "}
         {"\u00b7"}{" "}
         <button
@@ -2179,7 +2179,7 @@ export default function Page() {
               <div className="min-w-0 flex-1">
                 <h2 className="m-0 text-[15px] font-bold leading-tight">{matrixTbl.title[lang]}</h2>
                 <p className="m-0 mt-0.5 flex flex-wrap items-center gap-x-2 text-[11.5px] text-slate-500 dark:text-slate-400">
-                  <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.specialPages(matrixTbl.pages.replace("-", "â€“"))}</span>
+                  <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.specialPages(matrixTbl.pages.replace("-", "–"))}</span>
                   <span className="inline-flex items-center gap-0.5"><ListOrdered size={10} /> {t.specialRows(matrixTbl.rows.length)}</span>
                   <span className="inline-flex items-center gap-0.5"><Table2 size={10} /> {matrixTbl.cols.length} {t.specialCols.toLowerCase()}</span>
                 </p>
@@ -2273,19 +2273,19 @@ export default function Page() {
                               key={ci}
                               className={`border-b border-l border-slate-100 px-1 py-1 text-center align-middle dark:border-white/5 ${bg}`}
                             >
-                              {!raw ? null : /^[â€“â€”-]+$/.test(raw) ? (
+                              {!raw ? null : /^[–—-]+$/.test(raw) ? (
                                 <span aria-hidden className="text-slate-500 dark:text-slate-400">-</span>
                               ) : live ? (
                                 <button
                                   onClick={() => { go(live); setMatrix(null); }}
-                                  title={`${matrixTbl.cols[ci]} â€” ${raw}`}
+                                  title={`${matrixTbl.cols[ci]} — ${raw}`}
                                   className="rounded border border-teal-200 bg-teal-50 px-1.5 py-px font-mono text-[11px] font-bold text-teal-800 transition hover:border-teal-400 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/50 dark:text-teal-300 dark:hover:border-teal-500"
                                 >
                                   {raw}
                                 </button>
                               ) : (
                                 <span
-                                  title={target ? `${raw} â€” ${t.specialCellNo}` : expanded ? `${expanded} â€” ${t.specialSuffix}` : t.specialSuffix}
+                                  title={target ? `${raw} — ${t.specialCellNo}` : expanded ? `${expanded} — ${t.specialSuffix}` : t.specialSuffix}
                                   className="rounded border border-slate-200 bg-slate-50 px-1.5 py-px font-mono text-[11px] font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
                                 >
                                   {raw}
@@ -2302,7 +2302,7 @@ export default function Page() {
             </div>
 
             <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-2 text-[11px] text-slate-500 dark:border-white/10 dark:text-slate-400">
-              <span>{t.idxTblSrc(matrixTbl.pages.replace("-", "â€“"))}</span>
+              <span>{t.idxTblSrc(matrixTbl.pages.replace("-", "–"))}</span>
               <button
                 onClick={() => setMatrix(null)}
                 className="inline-flex items-center gap-1 rounded-lg bg-pmik-orange px-3 py-1.5 text-[12px] font-semibold text-navy-950 transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
@@ -2334,7 +2334,7 @@ export default function Page() {
               <div className="min-w-0 flex-1">
                 <h2 className="m-0 text-[15px] font-bold leading-tight">{t.morphTitle}</h2>
                 <p className="m-0 mt-0.5 flex flex-wrap items-center gap-x-2 text-[11.5px] text-slate-500 dark:text-slate-400">
-                  <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.morphSource((morph?.meta.pdfPages ?? "1066â€“1084").replace("-", "â€“"))}</span>
+                  <span className="inline-flex items-center gap-0.5"><FileText size={10} /> {t.morphSource((morph?.meta.pdfPages ?? "1066–1084").replace("-", "–"))}</span>
                   {morph && <span className="inline-flex items-center gap-0.5"><ListOrdered size={10} /> {t.morphCount(morph.entries.length)}</span>}
                 </p>
               </div>
@@ -2369,12 +2369,12 @@ export default function Page() {
                           <span className="flex flex-wrap gap-1">
                             {b.cats.split(",").map((part) => {
                               const raw = part.trim();
-                              const first = raw.split(/[â€“-]/)[0].trim();
+                              const first = raw.split(/[–-]/)[0].trim();
                               return navTarget(first) ? (
                                 <button
                                   key={raw}
                                   onClick={() => { go(first); setMorphOpen(false); }}
-                                  title={`${t.detail} â€” ${first}`}
+                                  title={`${t.detail} — ${first}`}
                                   className="rounded border border-violet-200 bg-violet-50 px-1.5 py-px font-mono text-[11px] font-bold text-violet-800 transition hover:border-violet-400 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300"
                                 >
                                   {raw}
@@ -2434,7 +2434,7 @@ export default function Page() {
                         <div className="flex items-start gap-2 border-b border-slate-100 py-1 last:border-0 dark:border-white/5">
                           <span className="w-[62px] shrink-0 font-mono text-[12px] font-bold text-navy-900 dark:text-sky-200">{e.c}</span>
                           <span
-                            title={bh ? `/${bh.b} â€” ${lang === "en" ? bh.en : bh.id}` : `/${morphBehav(e.c)}`}
+                            title={bh ? `/${bh.b} — ${lang === "en" ? bh.en : bh.id}` : `/${morphBehav(e.c)}`}
                             className="mt-px shrink-0 rounded border border-violet-200 bg-violet-50 px-1 py-px font-mono text-[10.5px] font-bold text-violet-700 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-300"
                           >
                             /{morphBehav(e.c)}
@@ -2447,7 +2447,7 @@ export default function Page() {
                                   <button
                                     key={s}
                                     onClick={() => { go(s); setMorphOpen(false); }}
-                                    title={`${t.morphSite} â€” ${s}`}
+                                    title={`${t.morphSite} — ${s}`}
                                     className="rounded border border-teal-200 bg-teal-50 px-1.5 py-px font-mono text-[10.5px] font-bold text-teal-800 transition hover:border-teal-400 dark:border-teal-800 dark:bg-teal-950/50 dark:text-teal-300"
                                   >
                                     {s}
