@@ -7,6 +7,7 @@
 // Aplikasi tidak pernah menghapus data pengguna saat lisensi bermasalah;
 // konten (DOM) tetap terpasang, overlay hanya menutupi secara visual.
 import { useCallback, useEffect, useState } from "react";
+import { RefreshCw, TriangleAlert, X } from "lucide-react";
 
 type LicState = {
   state: string;
@@ -60,6 +61,7 @@ export function LicenseGate() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     const a = window.icd10License;
@@ -108,22 +110,48 @@ export function LicenseGate() {
   if (st.state === "active") return null;
 
   if (st.state === "grace") {
+    if (dismissed) return null;
     const left = st.graceUntil ? st.graceUntil - now : 0;
     return (
       <div
         role="status"
-        className="fixed bottom-3 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-amber-400 bg-amber-50 px-4 py-2 text-sm text-amber-900 shadow-lg dark:bg-amber-950 dark:text-amber-100"
+        className="fixed bottom-3 right-3 z-50 w-[min(92vw,23rem)] overflow-hidden rounded-xl border border-amber-300 bg-white shadow-xl ring-1 ring-amber-200/70 dark:border-amber-800/70 dark:bg-navy-900 dark:ring-amber-900/40"
       >
-        ⚠ {st.message ?? "Masa tenggang offline."} Sisa: {fmtLeft(left)}.{" "}
-        <button
-          type="button"
-          onClick={doRenew}
-          disabled={busy}
-          className="underline underline-offset-2 font-medium hover:opacity-80 disabled:opacity-50"
-        >
-          Validasi ulang
-        </button>
-        {err ? <span className="ml-2 text-red-600">{err}</span> : null}
+        <div className="flex items-start gap-2.5 p-3.5">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300">
+            <TriangleAlert size={15} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[12.5px] font-semibold leading-snug text-amber-900 dark:text-amber-100">
+                Masa tenggang offline · sisa {fmtLeft(left)}
+              </p>
+              <button
+                type="button"
+                onClick={() => setDismissed(true)}
+                aria-label="Tutup pemberitahuan"
+                className="-mr-1 -mt-1 shrink-0 rounded-md p-1 text-amber-700/70 transition hover:bg-amber-100 hover:text-amber-900 dark:text-amber-300/70 dark:hover:bg-amber-950/60 dark:hover:text-amber-100"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-amber-800/90 dark:text-amber-200/80">
+              Hubungkan internet untuk validasi ulang.
+            </p>
+            {err ? (
+              <p className="mt-1 text-[11.5px] font-medium text-red-600 dark:text-red-400">{err}</p>
+            ) : null}
+            <button
+              type="button"
+              onClick={doRenew}
+              disabled={busy}
+              className="mt-2 inline-flex items-center gap-1 rounded-md bg-amber-500 px-2.5 py-1.5 text-[11.5px] font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-600 dark:hover:bg-amber-500"
+            >
+              <RefreshCw size={11} className={busy ? "animate-spin" : ""} />
+              {busy ? "Memvalidasi…" : "Validasi ulang"}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
