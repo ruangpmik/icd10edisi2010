@@ -1,5 +1,5 @@
 {
   "serverUrl": "",
-  "graceDays": 365,
-  "_comment": "serverUrl diisi saat distribusi (mis. https://license.ruangpmik.id). ICD10_LICENSE_URL menimpa env ini untuk pengujian. graceDays 365 = build BETA tanpa server lisensi; kembalikan ke 4 sebelum rilis produksi."
+  "graceDays": 4,
+  "_comment": "serverUrl diisi saat distribusi (mis. https://license.ruangpmik.id). ICD10_LICENSE_URL menimpa env ini untuk pengujian."
 }
