@@ -76,7 +76,20 @@ details[open] + .subdiv-active { display: none; }
   }
 
   /* watermark tetap tercetak */
-  .wm { display: block !important; opacity: 0.14 !important; }
+  .wm { display: block !important; opacity: 0.14 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Copyright tercetak sebagai teks nyata — tidak bergantung pada opsi
+     "Background graphics" di dialog cetak. */
+  #main-content::after {
+    content: "© RUANGPMIK — ICD-10 Codex 2010 · ruangpmik.myr.id";
+    display: block;
+    margin-top: 18px;
+    padding-top: 6px;
+    border-top: 1px solid #cbd5e1;
+    font-size: 10.5px;
+    color: #64748b;
+    text-align: center;
+  }
 }
 
 /* ===== Splash selamat datang (desktop only) ===== */
