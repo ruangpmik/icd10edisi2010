@@ -81,7 +81,7 @@ details[open] + .subdiv-active { display: none; }
   /* Copyright tercetak sebagai teks nyata — tidak bergantung pada opsi
      "Background graphics" di dialog cetak. */
   #main-content::after {
-    content: "© RUANGPMIK — ICD-10 Codex 2010 · ruangpmik.myr.id";
+    content: "© RUANGPMIK — ICD-10 Codex 2010 · ruangpmik.id";
     display: block;
     margin-top: 18px;
     padding-top: 6px;
