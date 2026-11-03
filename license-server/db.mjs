@@ -18,6 +18,7 @@ export function openDb(dbPath) {
       max_activations INTEGER NOT NULL DEFAULT 1,
       status          TEXT NOT NULL DEFAULT 'active',  -- active|disabled|revoked
       expires_at      TEXT,                      -- ISO-8601 atau NULL = permanen
+      owner           TEXT,                      -- nama/instansi pemegang lisensi
       note            TEXT,
       created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
     );
@@ -57,6 +58,15 @@ export function openDb(dbPath) {
     }
   } catch (e) {
     console.warn("LICENSE-DB: migrasi device_id gagal:", e?.message);
+  }
+  // Migration: tambah kolom owner untuk DB lama.
+  try {
+    const cols = db.prepare("PRAGMA table_info(licenses)").all();
+    if (!cols.some((c) => c.name === "owner")) {
+      db.exec("ALTER TABLE licenses ADD COLUMN owner TEXT");
+    }
+  } catch (e) {
+    console.warn("LICENSE-DB: migrasi owner gagal:", e?.message);
   }
   return db;
 }

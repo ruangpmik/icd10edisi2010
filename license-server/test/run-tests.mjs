@@ -225,6 +225,14 @@ async function main() {
   ok("clone tak bisa mengikat ulang device_id lewat aktivasi → tetap 403",
     cloneRe.status === 200 && cloneRenew.status === 403 && cloneRenew.j?.error === "wrong_activation");
 
+  // ============ IDENTITAS LISENSI: owner + masa berlaku di lease ============
+  const licOwn = await adminCreate(1, { owner: "RS Contoh", expiresAt: new Date(Date.now() + 30 * 86400000).toISOString() });
+  const ownAct = await post("/v1/activate", { licenseKey: licOwn.licenseKey, installationId: uuid() });
+  const ownClaims = verifyLease(ownAct.j?.lease).claims ?? {};
+  ok("lease memuat owner lisensi", ownClaims.owner === "RS Contoh", String(ownClaims.owner));
+  ok("lease memuat masa berlaku lisensi (license_exp)",
+    typeof ownClaims.license_exp === "number" && ownClaims.license_exp > Math.floor(Date.now() / 1000));
+
   // ============ NEGATIVE: status lisensi ============
   const licRev = await adminCreate(1);
   const rDev = uuid();

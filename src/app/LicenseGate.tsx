@@ -17,6 +17,9 @@ type LicState = {
   graceUntil: number | null;
   message: string | null;
   installationId?: string;
+  licenseId?: string | null;
+  owner?: string | null;
+  licenseExp?: number | null;
 };
 type LicResult = {
   ok: boolean;

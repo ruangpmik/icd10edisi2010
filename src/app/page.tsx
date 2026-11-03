@@ -274,7 +274,24 @@ export default function Page() {
   const sizesRef = useRef<Record<string, number>>({});
   const sizeOf = (f: string) => sizesRef.current[f] ?? 0;
 
+  // Status lisensi (desktop) untuk panel Tentang. Null di web publik.
+  const [lic, setLic] = useState<null | {
+    state: string;
+    owner?: string | null;
+    licenseExp?: number | null;
+    licenseId?: string | null;
+    expiresAt?: number | null;
+    graceUntil?: number | null;
+    installationId?: string;
+  }>(null);
+
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const a = window.icd10License;
+    if (!a) return;
+    a.status().then(setLic).catch(() => {});
+    return a.onUpdate((s) => setLic(s));
+  }, []);
   useEffect(() => {
     setLang(loadLang());
     // Ukuran acuan (kecil) dimuat lebih dulu agar bar progres punya penyebut.
@@ -2658,6 +2675,29 @@ export default function Page() {
               <div className="mt-4 space-y-3 text-[13.5px] leading-relaxed text-slate-700 dark:text-slate-200">
                 {t.aboutBody.map((p, i) => <p key={i}>{p}</p>)}
               </div>
+              {lic && (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-navy-950/40">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{t.licTitle}</p>
+                  <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12.5px]">
+                    <dt className="text-slate-500 dark:text-slate-400">{t.licStatus}</dt>
+                    <dd className="font-medium text-navy-900 dark:text-white">
+                      {lic.state === "active" ? t.licActive : lic.state === "grace" ? t.licGrace : lic.state === "expired" ? t.licExpired : t.licInactive}
+                    </dd>
+                    <dt className="text-slate-500 dark:text-slate-400">{t.licOwner}</dt>
+                    <dd className="font-medium text-navy-900 dark:text-white">{lic.owner || t.licUnknown}</dd>
+                    <dt className="text-slate-500 dark:text-slate-400">{t.licValidUntil}</dt>
+                    <dd className="font-medium text-navy-900 dark:text-white">
+                      {lic.licenseExp
+                        ? new Date(lic.licenseExp * 1000).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" })
+                        : t.licUnknown}
+                    </dd>
+                    <dt className="text-slate-500 dark:text-slate-400">{t.licDevice}</dt>
+                    <dd className="font-mono text-[11.5px] text-slate-600 dark:text-slate-300">
+                      {lic.installationId ? `${lic.installationId.slice(0, 8)}…` : "—"}
+                    </dd>
+                  </dl>
+                </div>
+              )}
               <a
                 href="https://ruangpmik.myr.id/support"
                 target="_blank"

@@ -187,6 +187,9 @@ function deriveStatus(store) {
     expiresAt: null,
     graceUntil: null,
     message: null,
+    licenseId: null,
+    owner: null,
+    licenseExp: null,
   };
   if (store._corrupt) {
     return { ...base, state: "invalid", message: "Simpanan lisensi rusak. Aktifkan ulang dengan license key Anda." };
@@ -216,9 +219,16 @@ function deriveStatus(store) {
     return { ...base, state: "invalid", message: "Lease bukan untuk produk ini." };
   }
   const now = nowSec(store);
+  // Identitas lisensi (dari klaim lease) untuk ditampilkan di UI.
+  const meta = {
+    licenseId: typeof c.sub === "string" ? c.sub : null,
+    owner: typeof c.owner === "string" ? c.owner : null,
+    licenseExp: typeof c.license_exp === "number" ? c.license_exp : null,
+  };
   if (v.ok && c.exp > now) {
     return {
       ...base,
+      ...meta,
       state: "active",
       canUseApp: true,
       features: Array.isArray(c.features) ? c.features : [],
@@ -230,6 +240,7 @@ function deriveStatus(store) {
   if (now < graceUntil) {
     return {
       ...base,
+      ...meta,
       state: "grace",
       canUseApp: true,
       features: Array.isArray(c.features) ? c.features : [],

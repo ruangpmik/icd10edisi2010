@@ -30,6 +30,16 @@ export interface UiStrings {
   donateTitle: string;
   donateTagline: string;
   donateFooter: string;
+  licTitle: string;
+  licStatus: string;
+  licOwner: string;
+  licValidUntil: string;
+  licDevice: string;
+  licUnknown: string;
+  licActive: string;
+  licGrace: string;
+  licExpired: string;
+  licInactive: string;
   toLight: string;
   toDark: string;
   searchPh: string;
@@ -208,6 +218,16 @@ const ID: UiStrings = {
   donateTitle: "Traktir Kopi untuk Pengembang",
   donateTagline: "Sedekah seikhlasnya, gunakan sepuasnya.",
   donateFooter: "Traktir Kopi",
+  licTitle: "Lisensi",
+  licStatus: "Status",
+  licOwner: "Pemilik",
+  licValidUntil: "Berlaku sampai",
+  licDevice: "Perangkat ini",
+  licUnknown: "Tidak tersedia",
+  licActive: "Aktif",
+  licGrace: "Masa tenggang",
+  licExpired: "Kedaluwarsa",
+  licInactive: "Belum aktivasi",
   toLight: "Mode terang",
   toDark: "Mode gelap",
   searchPh: "Cari kode / diagnosis…",
@@ -405,6 +425,16 @@ const EN: UiStrings = {
   donateTitle: "Buy the Developer a Coffee",
   donateTagline: "Give as you wish, use as much as you like.",
   donateFooter: "Buy a Coffee",
+  licTitle: "License",
+  licStatus: "Status",
+  licOwner: "Licensed to",
+  licValidUntil: "Valid until",
+  licDevice: "This device",
+  licUnknown: "Not available",
+  licActive: "Active",
+  licGrace: "Grace period",
+  licExpired: "Expired",
+  licInactive: "Not activated",
   toLight: "Light mode",
   toDark: "Dark mode",
   searchPh: "Search code / diagnosis…",

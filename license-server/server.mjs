@@ -187,6 +187,8 @@ function makeLease(row, activationId) {
     product: PRODUCT,
     activation_id: activationId,
     features: JSON.parse(row.features),
+    owner: row.owner ?? null,
+    license_exp: row.expires_at ? Math.floor(Date.parse(row.expires_at) / 1000) : null,
     iat: now,
     nbf: now,
     exp: now + config.leaseDays * 86400,
@@ -402,14 +404,15 @@ function handleAdmin(req, ip, body, url, role) {
     const id = crypto.randomUUID();
     const key = generateLicenseKey();
     db.prepare(
-      `INSERT INTO licenses (id, key_hash, features, max_activations, expires_at, note)
-       VALUES (?,?,?,?,?,?)`
+      `INSERT INTO licenses (id, key_hash, features, max_activations, expires_at, owner, note)
+       VALUES (?,?,?,?,?,?,?)`
     ).run(
       id,
       crypto.createHash("sha256").update(key, "utf8").digest("hex"),
       JSON.stringify(features ?? ["full"]),
       maxAct,
       expiresAt ?? null,
+      typeof body.owner === "string" ? body.owner.slice(0, 120) : null,
       typeof body.note === "string" ? body.note.slice(0, 200) : null
     );
     audit(id, null, "license_created", ip, `max=${maxAct}`);
@@ -420,7 +423,7 @@ function handleAdmin(req, ip, body, url, role) {
   if (req.method === "GET" && p === "/admin/licenses") {
     const rows = db
       .prepare(
-        `SELECT l.id, l.features, l.max_activations, l.status, l.expires_at, l.note, l.created_at,
+        `SELECT l.id, l.features, l.max_activations, l.status, l.expires_at, l.owner, l.note, l.created_at,
                 (SELECT COUNT(*) FROM activations a WHERE a.license_id = l.id) AS activations
          FROM licenses l ORDER BY l.created_at DESC LIMIT 200`
       )
