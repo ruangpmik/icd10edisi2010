@@ -2,7 +2,7 @@
 
 Browser ICD-10 edisi 2010 (Volume 1, 2, dan 3) dengan penelusuran pohon, indeks, tabel khusus, penautan morfologi ICD-O, serta catatan koding.
 
-Situs: https://ruangpmik.github.io/icd10edisi2010/
+Situs: https://ruangpmik.id/produk-gratis
 
 ## Menjalankan lokal
 
